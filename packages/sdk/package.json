@@ -1,6 +1,6 @@
 {
   "name": "@qira/qal-sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "QAL TypeScript SDK — digest, anchor, verify for QEV vaults",
   "license": "MIT",
   "type": "module",

@@ -31,4 +31,25 @@ pub enum QalError {
 
     #[msg("Issuer mismatch between accounts")]
     IssuerMismatch,
+
+    #[msg("Invalid status transition for set_status")]
+    InvalidStatusTransition,
+
+    #[msg("Superseded is terminal; cannot change status")]
+    StatusTerminalSuperseded,
+
+    #[msg("Revoked is terminal; cannot change status")]
+    StatusTerminalRevoked,
+
+    #[msg("set_status cannot set superseded; use supersede_vault")]
+    SupersedeRequiresAtomicIx,
+
+    #[msg("Old anchor is already superseded")]
+    AlreadySuperseded,
+
+    #[msg("Old anchor is revoked and cannot be superseded")]
+    CannotSupersedeRevoked,
+
+    #[msg("Old anchor status does not allow supersession")]
+    CannotSupersedeFromState,
 }

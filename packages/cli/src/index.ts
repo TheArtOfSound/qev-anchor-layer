@@ -26,7 +26,6 @@ import {
   programExists,
   describeAnchorPayload,
   anchorVault,
-  verifyVault,
   verifyVaultWithReceipt,
   toCliVerifyJson,
   fetchAnchorByAddress,
@@ -117,6 +116,7 @@ async function cmdDoctor(): Promise<number> {
   let failed = false;
 
   lines.push(`QAL version:        ${QAL_VERSION}`);
+  lines.push(`Protocol version:   0.1.2`);
   lines.push(`Status:             PRE-ALPHA · UNAUDITED · DEVNET/LOCALNET ONLY`);
   lines.push(`QEV pinned:         @bryan237l/qev-cli@${PINNED_QEV_VERSION}`);
   lines.push(`QEV VERSION const:  ${QEV_PACKAGE_VERSION}`);
@@ -308,29 +308,34 @@ async function cmdVerify(
     }
   }
 
-  let result;
-  if (receiptPath) {
-    const receiptJson = await fs.readFile(receiptPath, "utf8");
-    result = await verifyVaultWithReceipt(vault, receiptJson);
-  } else {
-    const net = network(flags);
-    const issuer = flagStr(flags, "issuer");
-    if (!issuer) {
-      console.error(
-        "Receipt-directed verification preferred. Pass --receipt <file> or --issuer <PUBKEY> --network <net>.",
-      );
-      return 2;
-    }
-    result = await verifyVault(vault, { network: net, issuer });
+  if (!receiptPath) {
+    console.error(
+      "Receipt-directed verification is required.\n" +
+        "Usage: qal verify <VAULT> --receipt receipt.json [--allow-custom-program] [--skip-tx-check]",
+    );
+    return 2;
   }
 
+  const receiptJson = await fs.readFile(receiptPath, "utf8");
+  const result = await verifyVaultWithReceipt(vault, receiptJson, {
+    allowCustomProgramId: flags["allow-custom-program"] === true,
+    verifyTransaction: flags["skip-tx-check"] !== true,
+  });
+
   console.log(JSON.stringify(toCliVerifyJson(result), null, 2));
+  console.error(
+    `Verification tiers: local_digest=${result.tiers.local_digest} ` +
+      `chain_accounts=${result.tiers.chain_accounts} ` +
+      `receipt_cross_check=${result.tiers.receipt_cross_check} ` +
+      `transaction_provenance=${result.tiers.transaction_provenance}`,
+  );
 
   if (
     result.outcome === "VALID_ACTIVE" ||
     result.outcome === "VALID_REVOKED" ||
     result.outcome === "VALID_SUPERSEDED" ||
-    result.outcome === "VALID_DISPUTED"
+    result.outcome === "VALID_DISPUTED" ||
+    result.outcome === "VALID_CUSTOM_DEPLOYMENT"
   ) {
     return 0;
   }

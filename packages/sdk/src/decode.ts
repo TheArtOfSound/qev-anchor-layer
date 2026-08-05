@@ -48,11 +48,10 @@ export function statusCodeToState(code: number): EndorsementState | null {
 }
 
 /**
- * Layout after disc (v2, no controller on anchor):
+ * VaultAnchor v2 layout after disc:
  * version u8, bump u8, issuer 32,
- * vault_digest 32, qev_schema_hash 32, content_ref_hash 32, parent_digest_claim 32,
+ * vault_digest 32, schema 32, content_ref 32, parent_claim 32,
  * created_slot u64, flags u16
- * = 8 + 2 + 32 + 128 + 8 + 2 = 178
  */
 export function decodeVaultAnchor(
   data: Buffer,
@@ -112,17 +111,18 @@ export function decodeVaultAnchor(
 }
 
 /**
- * Layout after disc: anchor 32, controller 32, state u8, updated_slot u64, bump u8
+ * VaultStatus v2 after disc:
+ * anchor 32, controller 32, state u8, updated_slot u64, bump u8, version u8, successor_digest 32
  */
 export function decodeVaultStatus(
   data: Buffer,
   address: string,
 ): VaultStatusAccount {
-  const min = 8 + 32 + 32 + 1 + 8 + 1;
+  const min = 8 + 32 + 32 + 1 + 8 + 1 + 1 + 32;
   if (data.length < min) {
     throw new DecodeError(
       "INVALID_ACCOUNT",
-      `VaultStatus account too short: ${data.length} bytes`,
+      `VaultStatus account too short: ${data.length} bytes (need >= ${min})`,
     );
   }
   const disc = data.subarray(0, 8);
@@ -149,6 +149,16 @@ export function decodeVaultStatus(
   const updated_slot = readU64LE(data, o);
   o += 8;
   const bump = data.readUInt8(o);
+  o += 1;
+  const version = data.readUInt8(o);
+  o += 1;
+  if (version !== 2) {
+    throw new DecodeError(
+      "UNSUPPORTED_ACCOUNT_VERSION",
+      `Unsupported VaultStatus version ${version} (expected 2)`,
+    );
+  }
+  const successor_digest = bytesToHex(data.subarray(o, o + 32));
 
   return {
     anchor,
@@ -157,6 +167,8 @@ export function decodeVaultStatus(
     state_code,
     updated_slot,
     bump,
+    version,
+    successor_digest,
     address,
   };
 }

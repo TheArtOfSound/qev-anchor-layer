@@ -3,32 +3,17 @@ use anchor_lang::prelude::*;
 use crate::constants::ANCHOR_VERSION;
 
 /// Fully immutable vault commitment. Created once; never rewritten.
-///
-/// Does NOT contain a controller. Control authority lives only on VaultStatus.
-///
-/// `parent_digest_claim` is an optional 32-byte claim. Unless
-/// `FLAG_PARENT_SUPERSEDED_ATOMIC` is set (via `supersede_vault`), the program
-/// does not prove the parent exists or is controlled by the issuer.
 #[account]
 #[derive(InitSpace)]
 pub struct VaultAnchor {
-    /// Account layout version (2 after security remediation).
     pub version: u8,
-    /// PDA bump.
     pub bump: u8,
-    /// Wallet that signed the original anchor transaction (permanent).
     pub issuer: Pubkey,
-    /// SHA-256(canonicalJSON(vault)).
     pub vault_digest: [u8; 32],
-    /// SHA-256 of the QEV schema string.
     pub qev_schema_hash: [u8; 32],
-    /// SHA-256 of normalized content reference, or zeros.
     pub content_ref_hash: [u8; 32],
-    /// Optional parent vault digest claim, or zeros.
     pub parent_digest_claim: [u8; 32],
-    /// Slot at which the anchor was created.
     pub created_slot: u64,
-    /// Bit flags (known bits only).
     pub flags: u16,
 }
 
@@ -38,7 +23,9 @@ impl VaultAnchor {
     }
 }
 
-/// Mutable endorsement / control state. Separated so revocation never erases history.
+/// Mutable endorsement / control state.
+///
+/// `successor_digest` is set exactly once by `supersede_vault` (non-zero when superseded).
 #[account]
 #[derive(InitSpace)]
 pub struct VaultStatus {
@@ -52,4 +39,8 @@ pub struct VaultStatus {
     pub updated_slot: u64,
     /// PDA bump.
     pub bump: u8,
+    /// Status layout version (2 after successor_digest addition).
+    pub version: u8,
+    /// Exact successor vault digest when superseded; otherwise zeros.
+    pub successor_digest: [u8; 32],
 }

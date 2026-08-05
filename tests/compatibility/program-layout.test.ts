@@ -1,9 +1,10 @@
 /**
- * Unit tests for PDA derivation and fail-closed network parsing.
+ * Unit tests for PDA derivation and fail-closed network/receipt parsing.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import bs58 from "bs58";
 import {
   deriveAnchorPda,
   deriveStatusPda,
@@ -18,6 +19,10 @@ import {
   decodeVaultAnchor,
   DecodeError,
 } from "../../packages/sdk/src/index.js";
+
+function fakeSig(): string {
+  return bs58.encode(Keypair.generate().secretKey.slice(0, 64));
+}
 
 describe("PDA derivation", () => {
   it("is deterministic for issuer+digest", () => {
@@ -53,7 +58,6 @@ describe("instruction data", () => {
     assert.equal(ix.programId.toBase58(), QAL_PROGRAM_ID.toBase58());
     assert.equal(ix.data.length, 8 + 32 * 4 + 2);
     assert.ok(Buffer.from(ix.data.subarray(0, 8)).equals(Buffer.from(DISC.anchorVault)));
-    // 4 accounts: issuer, anchor, status, system — no global protocol
     assert.equal(ix.keys.length, 4);
   });
 });
@@ -89,7 +93,7 @@ describe("receipt strict validation", () => {
       qev_schema_hash: "cd".repeat(32),
       content_reference: null,
       parent_digest_claim: null,
-      transaction_signature: "sig",
+      transaction_signature: fakeSig(),
       created_slot: 1,
     });
     assert.throws(() => parseReceipt(serializeReceipt(r)), /compromised/i);
@@ -110,12 +114,12 @@ describe("receipt strict validation", () => {
       qev_schema_hash: "cd".repeat(32),
       content_reference: null,
       parent_digest_claim: null,
-      transaction_signature: "sig",
+      transaction_signature: fakeSig(),
       created_slot: 42,
     });
     const again = parseReceipt(serializeReceipt(r));
     assert.equal(again.vault_digest, r.vault_digest);
-    assert.equal(again.protocol_version, "0.1.1");
+    assert.equal(again.protocol_version, "0.1.2");
   });
 });
 

@@ -10,7 +10,6 @@ use crate::state::{VaultAnchor, VaultStatus};
 pub struct SetStatus<'info> {
     pub controller: Signer<'info>,
 
-    /// Immutable anchor — never written here.
     #[account(
         seeds = [QAL_SEED, vault_anchor.issuer.as_ref(), vault_anchor.vault_digest.as_ref()],
         bump = vault_anchor.bump,
@@ -32,18 +31,47 @@ pub struct SetStatus<'info> {
     pub vault_status: Account<'info, VaultStatus>,
 }
 
+/// Transition matrix for set_status (superseded is NEVER set here):
+///
+/// active   → disputed | revoked
+/// disputed → active | revoked
+/// revoked  → terminal (error)
+/// superseded → terminal (error)
+fn validate_transition(from: u8, to: u8) -> Result<()> {
+    require!(to != STATUS_SUPERSEDED, QalError::SupersedeRequiresAtomicIx);
+
+    match from {
+        STATUS_SUPERSEDED => err!(QalError::StatusTerminalSuperseded),
+        STATUS_REVOKED => err!(QalError::StatusTerminalRevoked),
+        STATUS_ACTIVE => {
+            require!(
+                to == STATUS_DISPUTED || to == STATUS_REVOKED,
+                QalError::InvalidStatusTransition
+            );
+            Ok(())
+        }
+        STATUS_DISPUTED => {
+            require!(
+                to == STATUS_ACTIVE || to == STATUS_REVOKED,
+                QalError::InvalidStatusTransition
+            );
+            Ok(())
+        }
+        _ => err!(QalError::InvalidStatus),
+    }
+}
+
 pub fn handle_set_status(ctx: Context<SetStatus>, new_state: u8) -> Result<()> {
     require!(
-        matches!(
-            new_state,
-            STATUS_ACTIVE | STATUS_REVOKED | STATUS_SUPERSEDED | STATUS_DISPUTED
-        ),
+        matches!(new_state, STATUS_ACTIVE | STATUS_REVOKED | STATUS_DISPUTED),
         QalError::InvalidStatus
     );
 
+    let previous = ctx.accounts.vault_status.state;
+    validate_transition(previous, new_state)?;
+
     let clock = Clock::get()?;
     let status = &mut ctx.accounts.vault_status;
-    let previous = status.state;
     status.state = new_state;
     status.updated_slot = clock.slot;
 

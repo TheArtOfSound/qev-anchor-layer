@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::constants::{QAL_SEED, STATUS_SEED};
+use crate::constants::{QAL_SEED, STATUS_REVOKED, STATUS_SEED, STATUS_SUPERSEDED};
 use crate::error::QalError;
 use crate::state::{VaultAnchor, VaultStatus};
 
@@ -34,7 +34,19 @@ pub fn handle_transfer_controller(
     ctx: Context<TransferController>,
     new_controller: Pubkey,
 ) -> Result<()> {
-    require!(new_controller != Pubkey::default(), QalError::ZeroController);
+    require!(
+        new_controller != Pubkey::default(),
+        QalError::ZeroController
+    );
+    // Terminal states: no further control changes (clear evidence semantics).
+    require!(
+        ctx.accounts.vault_status.state != STATUS_SUPERSEDED,
+        QalError::StatusTerminalSuperseded
+    );
+    require!(
+        ctx.accounts.vault_status.state != STATUS_REVOKED,
+        QalError::StatusTerminalRevoked
+    );
 
     let previous = ctx.accounts.vault_status.controller;
     let clock = Clock::get()?;

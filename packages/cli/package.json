@@ -1,6 +1,6 @@
 {
   "name": "@qira/qal-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "QAL CLI — encrypt, anchor, verify QEV vaults",
   "license": "MIT",
   "type": "module",

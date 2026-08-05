@@ -1,50 +1,53 @@
-# Verification States
+# Verification States (v0.1.2)
 
-Verification always separates:
+## Tiers
 
-1. **Cryptographic match** — local digest equals on-chain `vault_digest`
-2. **Endorsement state** — active / revoked / superseded / disputed
-
-Never collapse a revoked-but-matching vault into a single generic “fail”.
-
-## Outcomes
-
-| Outcome | Meaning |
-|---------|---------|
-| `VALID_ACTIVE` | Schema OK, digest matches, status active |
-| `VALID_REVOKED` | Digest matches; controller revoked endorsement |
-| `VALID_SUPERSEDED` | Digest matches; superseded by a newer revision |
-| `VALID_DISPUTED` | Digest matches; disputed flag set by controller |
-| `DIGEST_MISMATCH` | Anchor found but digests differ |
-| `ANCHOR_NOT_FOUND` | No PDA for issuer+digest (or issuer missing) |
-| `MALFORMED_QEV` | Vault failed structural validation |
-| `UNSUPPORTED_QEV_SCHEMA` | Schema not supported by this QAL version |
-| `RPC_UNAVAILABLE` | Could not reach configured RPC |
-| `WRONG_NETWORK` | Reserved for explicit network mismatch checks |
-
-## CLI JSON shape
+Every verification result includes:
 
 ```json
 {
-  "outcome": "VALID_ACTIVE",
-  "vault_valid": true,
-  "digest": "...",
-  "anchor_found": true,
-  "cryptographic_match": true,
-  "issuer": "...",
-  "controller": "...",
-  "status": "active",
-  "parent_digest": null,
-  "network": "solana-devnet"
+  "tiers": {
+    "local_digest": true,
+    "chain_accounts": true,
+    "receipt_cross_check": true,
+    "transaction_provenance": true
+  }
 }
 ```
 
-Example revoked:
+- **local_digest** — QEV schema validate + canonical SHA-256
+- **chain_accounts** — owner, discriminator, version, PDAs
+- **receipt_cross_check** — every receipt claim vs chain (`RECEIPT_CHAIN_MISMATCH` if any disagree)
+- **transaction_provenance** — fetch signature; program, issuer, anchor, digest, slot (default on)
 
-```json
-{
-  "outcome": "VALID_REVOKED",
-  "cryptographic_match": true,
-  "status": "revoked"
-}
+## Success outcomes
+
+| Outcome | Meaning |
+|---------|---------|
+| `VALID_ACTIVE` | Official program; crypto match; status active |
+| `VALID_REVOKED` | Match; endorsement revoked (terminal) |
+| `VALID_SUPERSEDED` | Match; superseded with successor_digest |
+| `VALID_DISPUTED` | Match; disputed |
+| `VALID_CUSTOM_DEPLOYMENT` | Match under `allowCustomProgramId` (not official QAL) |
+
+## Failure / indeterminate
+
+| Outcome | Meaning |
+|---------|---------|
+| `DIGEST_MISMATCH` | Receipt-directed: local vault ≠ on-chain digest |
+| `SCHEMA_HASH_MISMATCH` | Schema hash disagree |
+| `RECEIPT_CHAIN_MISMATCH` | Receipt metadata lies relative to chain |
+| `PROGRAM_ID_NOT_OFFICIAL` | Non-official program without opt-in |
+| `ANCHOR_NOT_FOUND` / `STATUS_NOT_FOUND` | Missing accounts |
+| `INDETERMINATE_STATUS` | Status missing/undecodable (never treated as active) |
+| `OWNER_MISMATCH` / `PDA_MISMATCH` / `INVALID_STATUS_RELATION` | Account relation failures |
+| `TRANSACTION_*` | Provenance failures |
+| `WRONG_NETWORK` / `RPC_UNAVAILABLE` / `INVALID_RECEIPT` | Environment / input |
+
+## CLI
+
+```bash
+qal verify vault.qev --receipt vault.qal-receipt.json
+qal verify vault.qev --receipt r.json --allow-custom-program
+qal verify vault.qev --receipt r.json --skip-tx-check   # accounts only
 ```

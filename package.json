@@ -1,6 +1,6 @@
 {
   "name": "qev-anchor-layer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "QAL — QEV Anchor Layer (pre-alpha). Encrypt locally. Anchor publicly. Verify anywhere.",
   "license": "MIT",
@@ -21,17 +21,19 @@
     "build:verifier": "pnpm --filter @qira/qal-verifier build",
     "typecheck": "pnpm -r run typecheck",
     "lint": "pnpm -r run lint",
-    "test": "pnpm test:unit && pnpm test:program",
+    "test": "pnpm test:unit && pnpm test:program && pnpm test:adversarial",
     "test:unit": "pnpm --filter @qira/qal-sdk exec node --import tsx --test ../../tests/compatibility/*.test.ts ../../tests/tamper/*.test.ts",
+    "test:adversarial": "pnpm --filter @qira/qal-sdk exec node --import tsx --test ../../tests/adversarial/*.test.ts",
     "test:program": "anchor build && cargo test -p qal-anchor --test test_anchor",
     "test:devnet": "node --import tsx --test tests/devnet/*.test.ts",
     "doctor": "pnpm --filter @qira/qal-cli exec node dist/index.js doctor",
-    "audit:deps": "pnpm audit --prod || true"
+    "audit:deps": "pnpm audit --prod"
   },
   "devDependencies": {
     "@bryan237l/qev-cli": "0.30.0",
     "@solana/web3.js": "^1.98.2",
     "@types/node": "^22.13.10",
+    "bs58": "^6.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

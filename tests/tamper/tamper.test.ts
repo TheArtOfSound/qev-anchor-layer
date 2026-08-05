@@ -12,6 +12,11 @@ import {
   QAL_PROGRAM_ID,
 } from "../../packages/sdk/src/index.js";
 import { Keypair } from "@solana/web3.js";
+import bs58 from "bs58";
+
+function fakeSig(): string {
+  return bs58.encode(Keypair.generate().secretKey.slice(0, 64));
+}
 
 describe("tamper detection", () => {
   it("one-byte ciphertext change alters digest", async () => {
@@ -53,7 +58,7 @@ describe("tamper detection", () => {
 });
 
 describe("receipt serialization", () => {
-  it("round-trips with genesis_hash", () => {
+  it("round-trips with genesis_hash and protocol 0.1.2", () => {
     const issuer = Keypair.generate().publicKey.toBase58();
     const r = buildReceipt({
       network: "solana-devnet",
@@ -68,11 +73,12 @@ describe("receipt serialization", () => {
       qev_schema_hash: "cd".repeat(32),
       content_reference: null,
       parent_digest_claim: null,
-      transaction_signature: "sig",
+      transaction_signature: fakeSig(),
       created_slot: 42,
     });
     const again = parseReceipt(serializeReceipt(r));
     assert.equal(again.vault_digest, r.vault_digest);
     assert.equal(again.genesis_hash, r.genesis_hash);
+    assert.equal(again.protocol_version, "0.1.2");
   });
 });

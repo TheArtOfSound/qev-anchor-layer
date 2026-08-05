@@ -5,9 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -20,42 +25,74 @@ jobs:
           node-version: "22"
           cache: pnpm
 
-      - name: Install JS deps
+      - name: Install JS deps (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck / lint
-        run: pnpm typecheck && pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Unit tests
         run: pnpm test:unit
 
-      - name: Install Solana + Anchor
-        run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-          cargo install --git https://github.com/coral-xyz/anchor --tag v1.0.1 anchor-cli --locked || true
-          # Fallback: use avm if present
-          which anchor || cargo install --git https://github.com/coral-xyz/anchor anchor-cli --tag v1.0.1 --force
+      - name: Adversarial tests
+        run: pnpm test:adversarial
 
-      - name: Program keypair (ephemeral CI identity)
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "."
+
+      - name: Install Solana platform tools / CLI
         run: |
+          set -euo pipefail
+          sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.21/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+          solana --version
+
+      - name: Install Anchor 1.0.1
+        run: |
+          set -euo pipefail
+          cargo install --git https://github.com/coral-xyz/anchor --tag v1.0.1 anchor-cli --locked --force
+          anchor --version
+
+      # Coherent ephemeral identity for compile/test only (not production deploy key).
+      - name: Prepare ephemeral program identity
+        run: |
+          set -euo pipefail
           mkdir -p target/deploy
           solana-keygen new -o target/deploy/qal_anchor-keypair.json --no-bip39-passphrase -f
-          # Note: CI builds with whatever keypair is generated unless declare_id matches.
-          # For PR checks we still compile; deploy is not required in CI.
-          solana-keygen pubkey target/deploy/qal_anchor-keypair.json
+          ID=$(solana-keygen pubkey target/deploy/qal_anchor-keypair.json)
+          echo "Ephemeral CI program ID: $ID"
+          sed -i "s/declare_id!(\"[^\"]*\")/declare_id!(\"$ID\")/" programs/qal-anchor/src/lib.rs
+          sed -i "s/qal_anchor = \"[^\"]*\"/qal_anchor = \"$ID\"/g" Anchor.toml
+          grep declare_id programs/qal-anchor/src/lib.rs
+          grep qal_anchor Anchor.toml
 
-      - name: Build program (best effort if toolchain available)
-        run: |
-          if command -v anchor >/dev/null 2>&1; then
-            anchor build || echo "anchor build failed — see logs"
-            cargo test -p qal-anchor --test test_anchor || true
-          else
-            echo "anchor not available"
-          fi
+      - name: Anchor build
+        run: anchor build
 
-      - name: Verifier vendor build
+      - name: Program LiteSVM tests
+        run: cargo test -p qal-anchor --test test_anchor -- --nocapture
+
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        run: cargo clippy -p qal-anchor --all-targets -- -D warnings
+
+      - name: Verifier build (lockfile-only, no network fallback)
         run: pnpm build:verifier
 
-      - name: SDK/CLI build
+      - name: SDK + CLI build
         run: pnpm build
+
+      - name: Production dependency audit (blocking)
+        run: pnpm audit --prod

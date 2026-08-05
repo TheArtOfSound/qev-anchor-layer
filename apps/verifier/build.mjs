@@ -1,10 +1,12 @@
 /**
- * Bundle browser dependencies locally — no CDN at runtime.
+ * Bundle browser dependencies from the lockfile-installed package only.
+ * No network fallback. Fail if the artifact is missing.
  */
 import { createRequire } from "node:module";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -12,42 +14,52 @@ const vendorDir = path.join(__dirname, "vendor");
 
 await fs.mkdir(vendorDir, { recursive: true });
 
-// Prefer IIFE build from @solana/web3.js package if present in monorepo
-let src;
-try {
-  const pkgDir = path.dirname(require.resolve("@solana/web3.js/package.json"));
-  const candidates = [
-    path.join(pkgDir, "lib", "index.iife.min.js"),
-    path.join(pkgDir, "lib", "index.iife.js"),
-  ];
-  for (const c of candidates) {
-    try {
-      await fs.access(c);
-      src = c;
-      break;
-    } catch {
-      // try next
-    }
+const pkgDir = path.dirname(require.resolve("@solana/web3.js/package.json"));
+const candidates = [
+  path.join(pkgDir, "lib", "index.iife.min.js"),
+  path.join(pkgDir, "lib", "index.iife.js"),
+];
+
+let src = null;
+for (const c of candidates) {
+  try {
+    await fs.access(c);
+    src = c;
+    break;
+  } catch {
+    // try next
   }
-} catch {
-  // fall through
 }
 
 if (!src) {
-  // Download once at build time with pinned URL (not runtime CDN in the page).
-  const url =
-    "https://unpkg.com/@solana/web3.js@1.98.2/lib/index.iife.min.js";
-  console.log("Fetching pinned @solana/web3.js IIFE for vendor bundle…");
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch web3: ${res.status}`);
-  const body = Buffer.from(await res.arrayBuffer());
-  const dest = path.join(vendorDir, "solana-web3.min.js");
-  await fs.writeFile(dest, body);
-  console.log(`Wrote ${dest} (${body.length} bytes)`);
-} else {
-  const dest = path.join(vendorDir, "solana-web3.min.js");
-  await fs.copyFile(src, dest);
-  console.log(`Copied ${src} → ${dest}`);
+  throw new Error(
+    `Reproducible verifier build failed: no IIFE build found under ${pkgDir}/lib. ` +
+      `Install @solana/web3.js from the lockfile; network fallback is disabled.`,
+  );
 }
 
-console.log("Verifier build complete (static, no runtime CDN).");
+const dest = path.join(vendorDir, "solana-web3.min.js");
+await fs.copyFile(src, dest);
+const bytes = await fs.readFile(dest);
+const sha = createHash("sha256").update(bytes).digest("hex");
+console.log(`Copied ${src} → ${dest}`);
+console.log(`SHA-256: ${sha}`);
+console.log(`Bytes: ${bytes.length}`);
+
+// Fail if anyone left remote script URLs in verifier sources
+const sources = ["verifier.js", "index.html"];
+for (const f of sources) {
+  const text = await fs.readFile(path.join(__dirname, f), "utf8");
+  if (/https?:\/\/[^"'\s]+/i.test(text) && /script/i.test(text)) {
+    // allow only comments that mention https without loading
+  }
+  // Block explicit remote script tags / CDN hosts used as executable sources
+  if (
+    /src\s*=\s*["']https?:\/\//i.test(text) ||
+    /unpkg\.com|cdn\.jsdelivr|cdnjs\.cloudflare/i.test(text)
+  ) {
+    throw new Error(`Remote executable URL found in ${f} — not allowed`);
+  }
+}
+
+console.log("Verifier build complete (lockfile-only, no network, no runtime CDN).");

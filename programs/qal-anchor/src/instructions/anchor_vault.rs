@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::constants::{
     ALLOWED_CLIENT_FLAGS, ANCHOR_VERSION, FLAG_HAS_CONTENT_REF, FLAG_HAS_PARENT_CLAIM, QAL_SEED,
-    STATUS_ACTIVE, STATUS_SEED,
+    STATUS_ACTIVE, STATUS_SEED, STATUS_VERSION,
 };
 use crate::error::QalError;
 use crate::state::{VaultAnchor, VaultStatus};
@@ -10,11 +10,9 @@ use crate::state::{VaultAnchor, VaultStatus};
 #[derive(Accounts)]
 #[instruction(vault_digest: [u8; 32])]
 pub struct AnchorVault<'info> {
-    /// Issuer must sign. Becomes permanent issuer and initial controller on status.
     #[account(mut)]
     pub issuer: Signer<'info>,
 
-    /// Immutable anchor PDA: seeds = ["qal", issuer, vault_digest]
     #[account(
         init,
         payer = issuer,
@@ -24,7 +22,6 @@ pub struct AnchorVault<'info> {
     )]
     pub vault_anchor: Account<'info, VaultAnchor>,
 
-    /// Mutable status PDA: seeds = ["qal", "status", issuer, vault_digest]
     #[account(
         init,
         payer = issuer,
@@ -47,11 +44,7 @@ pub fn handle_anchor_vault(
 ) -> Result<()> {
     require!(vault_digest != [0u8; 32], QalError::ZeroVaultDigest);
     require!(qev_schema_hash != [0u8; 32], QalError::ZeroSchemaHash);
-    // Reject unknown bits; do not preserve client-supplied reserved flags.
-    require!(
-        flags & !ALLOWED_CLIENT_FLAGS == 0,
-        QalError::UnknownFlags
-    );
+    require!(flags & !ALLOWED_CLIENT_FLAGS == 0, QalError::UnknownFlags);
 
     let clock = Clock::get()?;
     let issuer_key = ctx.accounts.issuer.key();
@@ -61,7 +54,6 @@ pub fn handle_anchor_vault(
         normalized_flags |= FLAG_HAS_CONTENT_REF;
     }
     if parent_digest_claim != [0u8; 32] {
-        // Unverified parent claim unless supersede path set the atomic flag.
         normalized_flags |= FLAG_HAS_PARENT_CLAIM;
     }
 
@@ -82,6 +74,8 @@ pub fn handle_anchor_vault(
     status.state = STATUS_ACTIVE;
     status.updated_slot = clock.slot;
     status.bump = ctx.bumps.vault_status;
+    status.version = STATUS_VERSION;
+    status.successor_digest = [0u8; 32];
 
     emit!(VaultAnchored {
         anchor: anchor.key(),

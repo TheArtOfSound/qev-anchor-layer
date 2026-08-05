@@ -1,8 +1,11 @@
 /**
- * Fail-closed verification.
+ * Fail-closed, receipt-directed verification (v0.1.2).
  *
- * Preferred path: receipt-directed verification (fixed anchor address).
- * Issuer+digest PDA path is secondary and must still check owner/discriminator.
+ * Tiers performed are reported on every result:
+ * - local_digest
+ * - chain_accounts
+ * - receipt_cross_check
+ * - transaction_provenance (default on for receipt path)
  */
 
 import { Connection, PublicKey } from "@solana/web3.js";
@@ -13,35 +16,38 @@ import {
   hexToBytes,
   schemaHash,
   bytesToHex,
+  contentRefHash,
 } from "./digest.js";
 import {
-  QAL_PROGRAM_ID,
   deriveAnchorPda,
   deriveStatusPda,
-  assertNetwork,
   fetchGenesisHash,
 } from "./program.js";
 import { decodeVaultAnchor, decodeVaultStatus, DecodeError } from "./decode.js";
 import { parseReceipt, ReceiptError } from "./receipt.js";
-import { getNetworkConfig, COMPROMISED_PROGRAM_ID } from "./network.js";
+import {
+  getNetworkConfig,
+  COMPROMISED_PROGRAM_ID,
+  programIdForNetwork,
+} from "./network.js";
+import { verifyAnchorTransactionProvenance } from "./tx-verify.js";
 import type {
   QalReceipt,
+  ReceiptMismatch,
   SolanaNetwork,
   VerificationOutcome,
   VerificationResult,
+  VerificationTier,
+  VerifyOptions,
 } from "./types.js";
 
-export interface VerifyClientOptions {
-  network: SolanaNetwork;
-  rpcUrl?: string;
-  connection?: Connection;
-  programId?: PublicKey;
-}
-
-function createConnection(opts: VerifyClientOptions): Connection {
-  if (opts.connection) return opts.connection;
-  const url = opts.rpcUrl ?? getNetworkConfig(opts.network).defaultRpcUrl;
-  return new Connection(url, "confirmed");
+function emptyTiers(partial?: Partial<VerificationTier>): VerificationTier {
+  return {
+    local_digest: partial?.local_digest ?? false,
+    chain_accounts: partial?.chain_accounts ?? false,
+    receipt_cross_check: partial?.receipt_cross_check ?? false,
+    transaction_provenance: partial?.transaction_provenance ?? false,
+  };
 }
 
 function base(
@@ -59,17 +65,29 @@ function base(
     controller: partial.controller ?? null,
     status: partial.status ?? null,
     parent_digest_claim: partial.parent_digest_claim ?? null,
+    successor_digest: partial.successor_digest ?? null,
     network,
     program_id: partial.program_id ?? null,
+    official_program: partial.official_program ?? null,
     anchor_address: partial.anchor_address ?? null,
     status_address: partial.status_address ?? null,
     created_slot: partial.created_slot ?? null,
     content_ref_hash: partial.content_ref_hash ?? null,
+    tiers: partial.tiers ?? emptyTiers(),
+    mismatches: partial.mismatches,
     error: partial.error,
   };
 }
 
-function outcomeFromStatus(state: string): VerificationOutcome {
+function outcomeFromStatus(
+  state: string,
+  official: boolean,
+): VerificationOutcome {
+  if (!official) {
+    // Custom deployments: still report custom validity for active path only
+    // after full crypto match — labeled distinctly.
+    return "VALID_CUSTOM_DEPLOYMENT";
+  }
   switch (state) {
     case "active":
       return "VALID_ACTIVE";
@@ -80,7 +98,6 @@ function outcomeFromStatus(state: string): VerificationOutcome {
     case "disputed":
       return "VALID_DISPUTED";
     default:
-      // Fail closed — never map unknown → VALID_ACTIVE
       return "INDETERMINATE_STATUS";
   }
 }
@@ -89,26 +106,48 @@ function isZeroHex(hex: string): boolean {
   return isZeroDigest(hexToBytes(hex));
 }
 
+function addMismatch(
+  list: ReceiptMismatch[],
+  field: string,
+  receipt: string,
+  chain: string,
+): void {
+  if (receipt !== chain) {
+    list.push({ field, receipt, chain });
+  }
+}
+
 /**
- * Receipt-directed verification (correct model for DIGEST_MISMATCH).
+ * Receipt-directed verification (correct model for DIGEST_MISMATCH + receipt lying).
  */
 export async function verifyVaultWithReceipt(
   vault: unknown,
   receiptInput: QalReceipt | string,
-  opts?: { rpcUrl?: string; connection?: Connection },
+  opts?: VerifyOptions,
 ): Promise<VerificationResult> {
+  const allowCustom = opts?.allowCustomProgramId === true;
+  const doTx = opts?.verifyTransaction !== false;
+
   let receipt: QalReceipt;
   try {
-    receipt =
-      typeof receiptInput === "string" ? parseReceipt(receiptInput) : receiptInput;
-    // re-validate object form
-    if (typeof receiptInput !== "string") {
-      receipt = parseReceipt(JSON.stringify(receiptInput));
-    }
+    const json =
+      typeof receiptInput === "string"
+        ? receiptInput
+        : JSON.stringify(receiptInput);
+    receipt = parseReceipt(json, { allowCustomProgramId: allowCustom });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (err instanceof ReceiptError && msg.includes("not the official")) {
+      return base(null, {
+        outcome: "PROGRAM_ID_NOT_OFFICIAL",
+        error: msg,
+        tiers: emptyTiers(),
+      });
+    }
     return base(null, {
       outcome: "INVALID_RECEIPT",
-      error: err instanceof Error ? err.message : String(err),
+      error: msg,
+      tiers: emptyTiers(),
     });
   }
 
@@ -117,6 +156,20 @@ export async function verifyVaultWithReceipt(
       outcome: "INVALID_RECEIPT",
       error: "Compromised program ID refused",
       program_id: receipt.program_id,
+      official_program: false,
+      tiers: emptyTiers(),
+    });
+  }
+
+  const officialId = programIdForNetwork(receipt.network);
+  const isOfficial = receipt.program_id === officialId;
+  if (!isOfficial && !allowCustom) {
+    return base(receipt.network, {
+      outcome: "PROGRAM_ID_NOT_OFFICIAL",
+      error: `program_id ${receipt.program_id} !== official ${officialId}`,
+      program_id: receipt.program_id,
+      official_program: false,
+      tiers: emptyTiers(),
     });
   }
 
@@ -129,12 +182,14 @@ export async function verifyVaultWithReceipt(
         outcome: err.code,
         vault_valid: false,
         error: err.message,
+        tiers: emptyTiers({ local_digest: false }),
       });
     }
     return base(receipt.network, {
       outcome: "MALFORMED_QEV",
       vault_valid: false,
       error: err instanceof Error ? err.message : String(err),
+      tiers: emptyTiers(),
     });
   }
 
@@ -155,6 +210,7 @@ export async function verifyVaultWithReceipt(
         vault_valid: true,
         digest: digestResult.digest,
         error: `genesis mismatch: expected ${expected}, got ${genesis}`,
+        tiers: emptyTiers({ local_digest: true }),
       });
     }
     if (receipt.genesis_hash && receipt.genesis_hash !== genesis) {
@@ -163,6 +219,14 @@ export async function verifyVaultWithReceipt(
         vault_valid: true,
         digest: digestResult.digest,
         error: `receipt genesis_hash ${receipt.genesis_hash} != live ${genesis}`,
+        tiers: emptyTiers({ local_digest: true }),
+        mismatches: [
+          {
+            field: "genesis_hash",
+            receipt: receipt.genesis_hash,
+            chain: genesis,
+          },
+        ],
       });
     }
   } catch (err) {
@@ -171,6 +235,7 @@ export async function verifyVaultWithReceipt(
       vault_valid: true,
       digest: digestResult.digest,
       error: err instanceof Error ? err.message : String(err),
+      tiers: emptyTiers({ local_digest: true }),
     });
   }
 
@@ -190,6 +255,7 @@ export async function verifyVaultWithReceipt(
       vault_valid: true,
       digest: digestResult.digest,
       error: err instanceof Error ? err.message : String(err),
+      tiers: emptyTiers({ local_digest: true }),
     });
   }
 
@@ -202,6 +268,8 @@ export async function verifyVaultWithReceipt(
       anchor_address: receipt.anchor_address,
       status_address: receipt.status_address,
       program_id: receipt.program_id,
+      official_program: isOfficial,
+      tiers: emptyTiers({ local_digest: true, chain_accounts: true }),
     });
   }
 
@@ -211,9 +279,8 @@ export async function verifyVaultWithReceipt(
       vault_valid: true,
       digest: digestResult.digest,
       anchor_found: true,
-      anchor_address: receipt.anchor_address,
-      program_id: receipt.program_id,
       error: `account owner ${anchorInfo.owner.toBase58()} != program ${programId.toBase58()}`,
+      tiers: emptyTiers({ local_digest: true, chain_accounts: true }),
     });
   }
 
@@ -221,24 +288,24 @@ export async function verifyVaultWithReceipt(
   try {
     anchor = decodeVaultAnchor(Buffer.from(anchorInfo.data), receipt.anchor_address);
   } catch (err) {
-    const code =
-      err instanceof DecodeError ? err.code : "INVALID_ACCOUNT";
+    const code = err instanceof DecodeError ? err.code : "INVALID_ACCOUNT";
     return base(receipt.network, {
       outcome: code,
       vault_valid: true,
       digest: digestResult.digest,
       anchor_found: true,
       error: err instanceof Error ? err.message : String(err),
+      tiers: emptyTiers({ local_digest: true, chain_accounts: true }),
     });
   }
 
   // PDA must match stored issuer + stored digest
-  const [expectedPda] = deriveAnchorPda(
+  const [expectedAnchorPda] = deriveAnchorPda(
     new PublicKey(anchor.issuer),
     hexToBytes(anchor.vault_digest),
     programId,
   );
-  if (expectedPda.toBase58() !== receipt.anchor_address) {
+  if (expectedAnchorPda.toBase58() !== receipt.anchor_address) {
     return base(receipt.network, {
       outcome: "PDA_MISMATCH",
       vault_valid: true,
@@ -246,13 +313,100 @@ export async function verifyVaultWithReceipt(
       anchor_found: true,
       issuer: anchor.issuer,
       error: `anchor address is not PDA(issuer, stored_digest)`,
+      tiers: emptyTiers({ local_digest: true, chain_accounts: true }),
     });
   }
 
-  const schemaMatch =
-    bytesToHex(schemaHash(digestResult.schema)) === anchor.qev_schema_hash &&
-    digestResult.schemaHashHex === anchor.qev_schema_hash;
+  // Expected status PDA from chain issuer+digest
+  const [expectedStatusPda] = deriveStatusPda(
+    new PublicKey(anchor.issuer),
+    hexToBytes(anchor.vault_digest),
+    programId,
+  );
+  if (expectedStatusPda.toBase58() !== receipt.status_address) {
+    return base(receipt.network, {
+      outcome: "PDA_MISMATCH",
+      vault_valid: true,
+      digest: digestResult.digest,
+      anchor_found: true,
+      issuer: anchor.issuer,
+      error: `receipt.status_address ${receipt.status_address} != derived ${expectedStatusPda.toBase58()}`,
+      tiers: emptyTiers({ local_digest: true, chain_accounts: true }),
+      mismatches: [
+        {
+          field: "status_address",
+          receipt: receipt.status_address,
+          chain: expectedStatusPda.toBase58(),
+        },
+      ],
+    });
+  }
 
+  // Cross-check receipt claims vs chain
+  const mismatches: ReceiptMismatch[] = [];
+  addMismatch(mismatches, "issuer", receipt.issuer, anchor.issuer);
+  addMismatch(mismatches, "vault_digest", receipt.vault_digest, anchor.vault_digest);
+  addMismatch(
+    mismatches,
+    "qev_schema_hash",
+    receipt.qev_schema_hash,
+    anchor.qev_schema_hash,
+  );
+  addMismatch(
+    mismatches,
+    "created_slot",
+    String(receipt.created_slot),
+    String(anchor.created_slot),
+  );
+  const receiptParent = receipt.parent_digest_claim ?? "0".repeat(64);
+  const chainParent = isZeroHex(anchor.parent_digest_claim)
+    ? "0".repeat(64)
+    : anchor.parent_digest_claim;
+  addMismatch(mismatches, "parent_digest_claim", receiptParent, chainParent);
+
+  const receiptContentHash = receipt.content_reference
+    ? bytesToHex(contentRefHash(receipt.content_reference))
+    : "0".repeat(64);
+  addMismatch(
+    mismatches,
+    "content_reference_hash",
+    receiptContentHash,
+    anchor.content_ref_hash,
+  );
+
+  // Schema string must hash to chain schema hash
+  const localSchemaHash = bytesToHex(schemaHash(receipt.qev_schema));
+  if (localSchemaHash !== anchor.qev_schema_hash) {
+    mismatches.push({
+      field: "qev_schema",
+      receipt: receipt.qev_schema,
+      chain: `schema_hash=${anchor.qev_schema_hash}`,
+    });
+  }
+
+  if (mismatches.length > 0) {
+    return base(receipt.network, {
+      outcome: "RECEIPT_CHAIN_MISMATCH",
+      vault_valid: true,
+      digest: digestResult.digest,
+      anchor_found: true,
+      issuer: anchor.issuer,
+      program_id: receipt.program_id,
+      official_program: isOfficial,
+      anchor_address: anchor.address,
+      status_address: receipt.status_address,
+      created_slot: anchor.created_slot,
+      mismatches,
+      error: `${mismatches.length} receipt field(s) disagree with chain state`,
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
+    });
+  }
+
+  const schemaMatch = digestResult.schemaHashHex === anchor.qev_schema_hash;
   const cryptoMatch = anchor.vault_digest === digestResult.digest;
 
   if (!cryptoMatch) {
@@ -274,7 +428,13 @@ export async function verifyVaultWithReceipt(
         ? null
         : anchor.content_ref_hash,
       program_id: receipt.program_id,
+      official_program: isOfficial,
       error: `Local digest ${digestResult.digest} != on-chain ${anchor.vault_digest}`,
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
     });
   }
 
@@ -288,7 +448,13 @@ export async function verifyVaultWithReceipt(
       schema_hash_match: false,
       issuer: anchor.issuer,
       program_id: receipt.program_id,
+      official_program: isOfficial,
       error: "Local schema hash does not match on-chain qev_schema_hash",
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
     });
   }
 
@@ -302,14 +468,14 @@ export async function verifyVaultWithReceipt(
       schema_hash_match: true,
       issuer: anchor.issuer,
       status: "indeterminate",
-      parent_digest_claim: isZeroHex(anchor.parent_digest_claim)
-        ? null
-        : anchor.parent_digest_claim,
-      anchor_address: anchor.address,
-      status_address: receipt.status_address,
-      created_slot: anchor.created_slot,
       program_id: receipt.program_id,
+      official_program: isOfficial,
       error: "Status account missing — INDETERMINATE (not active)",
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
     });
   }
 
@@ -322,6 +488,12 @@ export async function verifyVaultWithReceipt(
       cryptographic_match: true,
       error: "Status account owner mismatch",
       program_id: receipt.program_id,
+      official_program: isOfficial,
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
     });
   }
 
@@ -339,22 +511,97 @@ export async function verifyVaultWithReceipt(
       issuer: anchor.issuer,
       status: "indeterminate",
       error: err instanceof Error ? err.message : String(err),
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
     });
   }
 
   if (status.anchor !== receipt.anchor_address) {
     return base(receipt.network, {
-      outcome: "INVALID_ACCOUNT",
+      outcome: "INVALID_STATUS_RELATION",
       vault_valid: true,
       digest: digestResult.digest,
       anchor_found: true,
       cryptographic_match: true,
       error: "status.anchor does not point at the verified VaultAnchor",
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
     });
   }
 
+  // Controller receipt vs chain
+  if (receipt.controller !== status.controller) {
+    return base(receipt.network, {
+      outcome: "RECEIPT_CHAIN_MISMATCH",
+      vault_valid: true,
+      digest: digestResult.digest,
+      anchor_found: true,
+      cryptographic_match: true,
+      mismatches: [
+        {
+          field: "controller",
+          receipt: receipt.controller,
+          chain: status.controller,
+        },
+      ],
+      error: "receipt.controller disagrees with chain status.controller",
+      tiers: emptyTiers({
+        local_digest: true,
+        chain_accounts: true,
+        receipt_cross_check: true,
+      }),
+    });
+  }
+
+  // Transaction provenance tier
+  let txTier = false;
+  if (doTx) {
+    const prov = await verifyAnchorTransactionProvenance(connection, {
+      signature: receipt.transaction_signature,
+      programId,
+      issuer: new PublicKey(anchor.issuer),
+      anchorAddress: anchorPk,
+      vaultDigest: hexToBytes(anchor.vault_digest),
+      expectedSlot: anchor.created_slot,
+    });
+    if (!prov.ok) {
+      return base(receipt.network, {
+        outcome: prov.outcome,
+        vault_valid: true,
+        digest: digestResult.digest,
+        anchor_found: true,
+        cryptographic_match: true,
+        schema_hash_match: true,
+        issuer: anchor.issuer,
+        controller: status.controller,
+        status: status.state,
+        program_id: receipt.program_id,
+        official_program: isOfficial,
+        anchor_address: anchor.address,
+        status_address: status.address,
+        created_slot: anchor.created_slot,
+        error: prov.error,
+        tiers: emptyTiers({
+          local_digest: true,
+          chain_accounts: true,
+          receipt_cross_check: true,
+          transaction_provenance: true,
+        }),
+      });
+    }
+    txTier = true;
+  }
+
+  const outcome = outcomeFromStatus(status.state, isOfficial);
+
   return base(receipt.network, {
-    outcome: outcomeFromStatus(status.state),
+    outcome,
     vault_valid: true,
     digest: digestResult.digest,
     anchor_found: true,
@@ -366,6 +613,9 @@ export async function verifyVaultWithReceipt(
     parent_digest_claim: isZeroHex(anchor.parent_digest_claim)
       ? null
       : anchor.parent_digest_claim,
+    successor_digest: isZeroHex(status.successor_digest)
+      ? null
+      : status.successor_digest,
     anchor_address: anchor.address,
     status_address: status.address,
     created_slot: anchor.created_slot,
@@ -373,95 +623,41 @@ export async function verifyVaultWithReceipt(
       ? null
       : anchor.content_ref_hash,
     program_id: receipt.program_id,
+    official_program: isOfficial,
+    tiers: emptyTiers({
+      local_digest: true,
+      chain_accounts: true,
+      receipt_cross_check: true,
+      transaction_provenance: txTier,
+    }),
   });
 }
 
 /**
- * Issuer+digest verification. Prefer verifyVaultWithReceipt when a receipt exists.
- * Still fail-closed on missing status / bad owner / bad discriminator.
+ * Issuer+digest verification without receipt (weaker — no DIGEST_MISMATCH path).
+ * Prefer verifyVaultWithReceipt.
  */
 export async function verifyVault(
   vault: unknown,
-  opts: VerifyClientOptions & { issuer?: string; receipt?: QalReceipt | string },
+  opts: VerifyOptions & {
+    network: SolanaNetwork;
+    issuer?: string;
+    receipt?: QalReceipt | string;
+    programId?: PublicKey;
+  },
 ): Promise<VerificationResult> {
   if (opts.receipt) {
     return verifyVaultWithReceipt(vault, opts.receipt, opts);
   }
 
   const network = opts.network;
-  const programId = opts.programId ?? new PublicKey(getNetworkConfig(network).programId);
-
-  let digestResult;
-  try {
-    digestResult = computeVaultDigest(vault);
-  } catch (err) {
-    if (err instanceof DigestError) {
-      return base(network, { outcome: err.code, vault_valid: false, error: err.message });
-    }
-    return base(network, {
-      outcome: "MALFORMED_QEV",
-      vault_valid: false,
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
-
-  if (!opts.issuer) {
-    return base(network, {
-      outcome: "INVALID_RECEIPT",
-      vault_valid: true,
-      digest: digestResult.digest,
-      error:
-        "Receipt or --issuer required. Prefer receipt-directed verification for DIGEST_MISMATCH semantics.",
-    });
-  }
-
-  let connection: Connection;
-  try {
-    connection = createConnection(opts);
-    await assertNetwork(connection, network);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("WRONG_NETWORK")) {
-      return base(network, {
-        outcome: "WRONG_NETWORK",
-        vault_valid: true,
-        digest: digestResult.digest,
-        error: msg,
-      });
-    }
-    return base(network, {
-      outcome: "RPC_UNAVAILABLE",
-      vault_valid: true,
-      digest: digestResult.digest,
-      error: msg,
-    });
-  }
-
-  const issuer = new PublicKey(opts.issuer);
-  const [anchorPda] = deriveAnchorPda(issuer, digestResult.digestBytes, programId);
-  const [statusPda] = deriveStatusPda(issuer, digestResult.digestBytes, programId);
-
-  // Synthetic receipt path for the PDA-derived address (same fail-closed checks)
-  const synthetic: QalReceipt = {
-    protocol: "QAL",
-    protocol_version: "0.1.1",
-    network,
-    genesis_hash: getNetworkConfig(network).expectedGenesisHash ?? "",
-    program_id: programId.toBase58(),
-    anchor_address: anchorPda.toBase58(),
-    status_address: statusPda.toBase58(),
-    issuer: issuer.toBase58(),
-    controller: issuer.toBase58(),
-    vault_digest: digestResult.digest,
-    qev_schema: digestResult.schema,
-    qev_schema_hash: digestResult.schemaHashHex,
-    content_reference: null,
-    parent_digest_claim: null,
-    transaction_signature: "pda-lookup",
-    created_slot: 0,
-  };
-
-  return verifyVaultWithReceipt(vault, synthetic, { connection });
+  return base(network, {
+    outcome: "INVALID_RECEIPT",
+    vault_valid: false,
+    error:
+      "Receipt-directed verification is required. Pass a QAL receipt for DIGEST_MISMATCH and provenance checks.",
+    tiers: emptyTiers(),
+  });
 }
 
 export function toCliVerifyJson(result: VerificationResult): Record<string, unknown> {
@@ -476,14 +672,16 @@ export function toCliVerifyJson(result: VerificationResult): Record<string, unkn
     controller: result.controller,
     status: result.status,
     parent_digest_claim: result.parent_digest_claim,
+    successor_digest: result.successor_digest,
     network: result.network,
     program_id: result.program_id,
+    official_program: result.official_program,
     anchor_address: result.anchor_address,
     created_slot: result.created_slot,
+    tiers: result.tiers,
+    mismatches: result.mismatches ?? null,
     error: result.error ?? null,
   };
 }
 
-// re-export for typecheck unused import silence
-void QAL_PROGRAM_ID;
 void ReceiptError;

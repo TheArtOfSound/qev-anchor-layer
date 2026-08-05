@@ -1,42 +1,76 @@
-# QAL Implementation Status (v0.1.1 security remediation)
+# QAL Implementation Status (v0.1.2 pre-devnet hardening)
 
 ## Label
 
-> **Experimental pre-alpha. Devnet only. Unaudited. Do not use for production evidence.**
+> **Experimental pre-alpha. Devnet/localnet only. Unaudited. Do not use for production evidence.**
 
-## Remediation vs audit launch blockers
+## Official pre-alpha program ID
 
-| # | Blocker | Status |
-|---|---------|--------|
-| 1 | Committed program keypair | **Fixed** — removed from tree; old ID documented compromised; new ID + local-only keypair |
-| 2 | Fail-open VALID_ACTIVE | **Fixed** — missing/unknown status → INDETERMINATE / STATUS_NOT_FOUND |
-| 3 | Decoder accepts non-QAL data | **Fixed** — strict discriminator + owner checks |
-| 4 | Mutable “immutable” anchor | **Fixed** — controller only on VaultStatus; anchor layout v2 |
-| 5 | Protocol init capture | **Fixed** — `initialize_protocol` removed; no global config on hot path |
-| 6 | Global counter contention | **Fixed** — no ProtocolConfig writes on anchor |
-| 7 | Browser CDN runtime | **Fixed** — vendor build; CSP; no mainnet option |
-| 8 | Supersede false success | **Fixed** — atomic `supersede_vault` instruction; honest CLI errors |
-| 9 | Permissive mainnet/network | **Fixed** — reject mainnet/unknown; genesis hash binding on receipts |
-| 10 | Weak default tests | **Improved** — unit + program tests in `pnpm test`; CI workflow added |
+```text
+6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR
+```
 
-## Still incomplete
+Compromised (abandoned):
+
+```text
+AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf
+```
+
+## v0.1.2 hardening (this pass)
+
+| Item | Status |
+|------|--------|
+| CI without ignored failures | Done (workflow blocks on all steps) |
+| Official program ID required | Done (`PROGRAM_ID_NOT_OFFICIAL` / custom opt-in) |
+| Receipt ↔ chain cross-check | Done (`RECEIPT_CHAIN_MISMATCH` + mismatches[]) |
+| Status PDA independent derivation | Done |
+| Transaction provenance | Done (default on; `--skip-tx-check` opt-out) |
+| Status transition matrix | Done (on-chain) |
+| successor_digest | Done |
+| Second successor blocked | Done |
+| Manual superseded via set_status blocked | Done |
+| Browser lockfile-only vendor | Done (no unpkg) |
+| Adversarial tests | Done |
+
+## Verification tiers (reported every time)
+
+```text
+local_digest
+chain_accounts
+receipt_cross_check
+transaction_provenance   # default on for receipt-directed verify
+```
+
+## Status transition matrix
+
+```text
+set_status:
+  active   → disputed | revoked
+  disputed → active | revoked
+  revoked  → terminal
+  superseded → terminal
+  superseded is NEVER set by set_status
+
+supersede_vault:
+  active|disputed → superseded (stores successor_digest)
+  revoked/superseded → error
+  second successor → error
+```
+
+## Still incomplete before “devnet evidence complete”
 
 | Item | Notes |
 |------|-------|
-| Live devnet deploy + e2e evidence | Requires funded wallet + deployer keypair outside git |
-| External audit | Not done |
-| Package split (`qal-core` browser-neutral) | Documented; not fully split |
-| Parent claim on-chain verification | Atomic supersede only; free-form claims labeled unverified |
-| SAS batching | Decision doc only (`docs/SAS_ARCHITECTURE.md`) |
-| Token | **None. Do not launch a token.** |
+| Green GitHub Actions on `main` | Must be confirmed after push |
+| Live devnet deploy | Not done — do not use grant wallet as authority |
+| External audit | No |
+| Token | **None** |
+| Full browser QEV schema validation | Still simplified vs CLI/SDK |
 
-## Program IDs
+## Grant wallet (receive only)
 
-| | |
-|--|--|
-| Compromised | `AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf` |
-| Active pre-alpha | `6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR` |
+```text
+8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe
+```
 
-## Package release
-
-Not published to npm. Names `@qira/qal-*` remain private workspace packages.
+Not for program authority, deploy signer, or automated fee payer.

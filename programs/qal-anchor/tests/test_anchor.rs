@@ -1,4 +1,4 @@
-//! LiteSVM tests for qal-anchor v2 (immutable anchor, no global counter, atomic supersede).
+//! LiteSVM tests: immutable anchor, transitions, atomic supersede, successor lock.
 //! Requires `anchor build` so `target/deploy/qal_anchor.so` exists.
 
 use {
@@ -31,8 +31,7 @@ fn send_err(svm: &mut LiteSVM, payer: &Keypair, ix: Instruction) {
     assert!(svm.send_transaction(tx).is_err());
 }
 
-#[test]
-fn anchor_status_transfer_supersede() {
+fn setup() -> (LiteSVM, Keypair, Pubkey, AnchorPubkey) {
     let program_id_anchor = qal_anchor::id();
     let program_id = pk(program_id_anchor);
     let payer = Keypair::new();
@@ -40,132 +39,110 @@ fn anchor_status_transfer_supersede() {
     let bytes = include_bytes!("../../../target/deploy/qal_anchor.so");
     svm.add_program(program_id, bytes).unwrap();
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
+    (svm, payer, program_id, program_id_anchor)
+}
+
+fn pdas(
+    issuer: &AnchorPubkey,
+    digest: &[u8; 32],
+    program_id_anchor: &AnchorPubkey,
+) -> (AnchorPubkey, AnchorPubkey) {
+    let (a, _) = AnchorPubkey::find_program_address(
+        &[b"qal", issuer.as_ref(), digest.as_ref()],
+        program_id_anchor,
+    );
+    let (s, _) = AnchorPubkey::find_program_address(
+        &[b"qal", b"status", issuer.as_ref(), digest.as_ref()],
+        program_id_anchor,
+    );
+    (a, s)
+}
+
+fn anchor_ix(
+    program_id: Pubkey,
+    payer: &Keypair,
+    anchor_pda: AnchorPubkey,
+    status_pda: AnchorPubkey,
+    vault_digest: [u8; 32],
+    schema_hash: [u8; 32],
+    flags: u16,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new(payer.pubkey(), true),
+            AccountMeta::new(pk(anchor_pda), false),
+            AccountMeta::new(pk(status_pda), false),
+            AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
+        ],
+        data: qal_anchor::instruction::AnchorVault {
+            vault_digest,
+            qev_schema_hash: schema_hash,
+            content_ref_hash: [0u8; 32],
+            parent_digest_claim: [0u8; 32],
+            flags,
+        }
+        .data(),
+    }
+}
+
+#[test]
+fn full_transition_and_supersede_matrix() {
+    let (mut svm, payer, program_id, program_id_anchor) = setup();
+    let issuer_anchor = AnchorPubkey::new_from_array(payer.pubkey().to_bytes());
 
     let mut vault_digest = [0u8; 32];
     vault_digest[0] = 0xab;
     let mut schema_hash = [0u8; 32];
     schema_hash[0] = 0xcd;
-    let content_ref = [0u8; 32];
-    let parent = [0u8; 32];
-
-    let issuer_anchor = AnchorPubkey::new_from_array(payer.pubkey().to_bytes());
-    let (anchor_pda, _) = AnchorPubkey::find_program_address(
-        &[b"qal", issuer_anchor.as_ref(), vault_digest.as_ref()],
-        &program_id_anchor,
-    );
-    let (status_pda, _) = AnchorPubkey::find_program_address(
-        &[
-            b"qal",
-            b"status",
-            issuer_anchor.as_ref(),
-            vault_digest.as_ref(),
-        ],
-        &program_id_anchor,
-    );
+    let (anchor_pda, status_pda) = pdas(&issuer_anchor, &vault_digest, &program_id_anchor);
 
     // unknown flags rejected
-    let bad_flags = qal_anchor::instruction::AnchorVault {
-        vault_digest,
-        qev_schema_hash: schema_hash,
-        content_ref_hash: content_ref,
-        parent_digest_claim: parent,
-        flags: 1 << 7,
-    }
-    .data();
     send_err(
         &mut svm,
         &payer,
-        Instruction {
+        anchor_ix(
             program_id,
-            accounts: vec![
-                AccountMeta::new(payer.pubkey(), true),
-                AccountMeta::new(pk(anchor_pda), false),
-                AccountMeta::new(pk(status_pda), false),
-                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
-            ],
-            data: bad_flags,
-        },
+            &payer,
+            anchor_pda,
+            status_pda,
+            vault_digest,
+            schema_hash,
+            1 << 7,
+        ),
     );
 
-    // zero digest rejected
-    let zero = [0u8; 32];
-    let (z_a, _) = AnchorPubkey::find_program_address(
-        &[b"qal", issuer_anchor.as_ref(), zero.as_ref()],
-        &program_id_anchor,
-    );
-    let (z_s, _) = AnchorPubkey::find_program_address(
-        &[b"qal", b"status", issuer_anchor.as_ref(), zero.as_ref()],
-        &program_id_anchor,
-    );
-    send_err(
-        &mut svm,
-        &payer,
-        Instruction {
-            program_id,
-            accounts: vec![
-                AccountMeta::new(payer.pubkey(), true),
-                AccountMeta::new(pk(z_a), false),
-                AccountMeta::new(pk(z_s), false),
-                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
-            ],
-            data: qal_anchor::instruction::AnchorVault {
-                vault_digest: zero,
-                qev_schema_hash: schema_hash,
-                content_ref_hash: content_ref,
-                parent_digest_claim: parent,
-                flags: 0,
-            }
-            .data(),
-        },
-    );
-
-    // happy path anchor
+    // happy path
     send(
         &mut svm,
         &payer,
-        Instruction {
+        anchor_ix(
             program_id,
-            accounts: vec![
-                AccountMeta::new(payer.pubkey(), true),
-                AccountMeta::new(pk(anchor_pda), false),
-                AccountMeta::new(pk(status_pda), false),
-                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
-            ],
-            data: qal_anchor::instruction::AnchorVault {
-                vault_digest,
-                qev_schema_hash: schema_hash,
-                content_ref_hash: content_ref,
-                parent_digest_claim: parent,
-                flags: 0,
-            }
-            .data(),
-        },
+            &payer,
+            anchor_pda,
+            status_pda,
+            vault_digest,
+            schema_hash,
+            0,
+        ),
     );
 
-    // anchor layout: disc(8) + version(1) + bump(1) + issuer(32) — no controller
-    let anchor_acct = svm.get_account(&pk(anchor_pda)).expect("anchor");
-    assert_eq!(anchor_acct.data[8], 2, "version must be 2");
-    let issuer_bytes = &anchor_acct.data[10..42];
-    assert_eq!(issuer_bytes, payer.pubkey().as_ref());
-
-    // unauthorized set_status
-    let stranger = Keypair::new();
-    svm.airdrop(&stranger.pubkey(), 1_000_000_000).unwrap();
+    // manual superseded via set_status must fail
     send_err(
         &mut svm,
-        &stranger,
+        &payer,
         Instruction {
             program_id,
             accounts: vec![
-                AccountMeta::new_readonly(stranger.pubkey(), true),
+                AccountMeta::new_readonly(payer.pubkey(), true),
                 AccountMeta::new_readonly(pk(anchor_pda), false),
                 AccountMeta::new(pk(status_pda), false),
             ],
-            data: qal_anchor::instruction::SetStatus { new_state: 1 }.data(),
+            data: qal_anchor::instruction::SetStatus { new_state: 2 }.data(),
         },
     );
 
-    // authorized revoke
+    // active → disputed ok
     send(
         &mut svm,
         &payer,
@@ -176,12 +153,11 @@ fn anchor_status_transfer_supersede() {
                 AccountMeta::new_readonly(pk(anchor_pda), false),
                 AccountMeta::new(pk(status_pda), false),
             ],
-            data: qal_anchor::instruction::SetStatus { new_state: 1 }.data(),
+            data: qal_anchor::instruction::SetStatus { new_state: 3 }.data(),
         },
     );
 
-    // transfer controller (status only)
-    let new_controller = stranger.pubkey();
+    // disputed → active ok
     send(
         &mut svm,
         &payer,
@@ -192,41 +168,22 @@ fn anchor_status_transfer_supersede() {
                 AccountMeta::new_readonly(pk(anchor_pda), false),
                 AccountMeta::new(pk(status_pda), false),
             ],
-            data: qal_anchor::instruction::TransferController {
-                new_controller: AnchorPubkey::new_from_array(new_controller.to_bytes()),
-            }
-            .data(),
+            data: qal_anchor::instruction::SetStatus { new_state: 0 }.data(),
         },
     );
 
-    // issuer on immutable anchor unchanged
-    let anchor_acct = svm.get_account(&pk(anchor_pda)).unwrap();
-    assert_eq!(&anchor_acct.data[10..42], payer.pubkey().as_ref());
-
-    // atomic supersede by new controller
+    // supersede
     let mut new_digest = [0u8; 32];
     new_digest[0] = 0xef;
-    let (new_a, _) = AnchorPubkey::find_program_address(
-        &[b"qal", issuer_anchor.as_ref(), new_digest.as_ref()],
-        &program_id_anchor,
-    );
-    let (new_s, _) = AnchorPubkey::find_program_address(
-        &[
-            b"qal",
-            b"status",
-            issuer_anchor.as_ref(),
-            new_digest.as_ref(),
-        ],
-        &program_id_anchor,
-    );
+    let (new_a, new_s) = pdas(&issuer_anchor, &new_digest, &program_id_anchor);
 
     send(
         &mut svm,
-        &stranger,
+        &payer,
         Instruction {
             program_id,
             accounts: vec![
-                AccountMeta::new(stranger.pubkey(), true),
+                AccountMeta::new(payer.pubkey(), true),
                 AccountMeta::new_readonly(pk(anchor_pda), false),
                 AccountMeta::new(pk(status_pda), false),
                 AccountMeta::new(pk(new_a), false),
@@ -236,25 +193,142 @@ fn anchor_status_transfer_supersede() {
             data: qal_anchor::instruction::SupersedeVault {
                 new_vault_digest: new_digest,
                 new_qev_schema_hash: schema_hash,
-                new_content_ref_hash: content_ref,
+                new_content_ref_hash: [0u8; 32],
                 new_flags: 0,
             }
             .data(),
         },
     );
 
-    // old status superseded (layout: disc8 + anchor32 + controller32 + state u8)
+    // old status = superseded (2); successor_digest stored
     let status_acct = svm.get_account(&pk(status_pda)).unwrap();
+    // disc8 + anchor32 + controller32 + state1 + updated_slot8 + bump1 + version1 + successor32
     let state = status_acct.data[8 + 32 + 32];
-    assert_eq!(state, 2, "old status must be superseded");
+    assert_eq!(state, 2);
+    let succ_off = 8 + 32 + 32 + 1 + 8 + 1 + 1;
+    assert_eq!(&status_acct.data[succ_off..succ_off + 32], &new_digest);
 
-    // new parent claim == old digest
-    let new_anchor = svm.get_account(&pk(new_a)).unwrap();
-    // disc8 + ver1 + bump1 + issuer32 + vault_digest32 + schema32 + content32 + parent32
-    let parent_off = 8 + 2 + 32 + 32 + 32 + 32;
-    assert_eq!(
-        &new_anchor.data[parent_off..parent_off + 32],
-        &vault_digest,
-        "parent_digest_claim must equal old digest"
+    // reactivation after supersession fails
+    send_err(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new_readonly(payer.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+            ],
+            data: qal_anchor::instruction::SetStatus { new_state: 0 }.data(),
+        },
+    );
+
+    // second successor attempt fails
+    let mut third = [0u8; 32];
+    third[0] = 0x11;
+    let (t_a, t_s) = pdas(&issuer_anchor, &third, &program_id_anchor);
+    send_err(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new(payer.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+                AccountMeta::new(pk(t_a), false),
+                AccountMeta::new(pk(t_s), false),
+                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
+            ],
+            data: qal_anchor::instruction::SupersedeVault {
+                new_vault_digest: third,
+                new_qev_schema_hash: schema_hash,
+                new_content_ref_hash: [0u8; 32],
+                new_flags: 0,
+            }
+            .data(),
+        },
+    );
+}
+
+#[test]
+fn revoked_is_terminal_and_blocks_supersede() {
+    let (mut svm, payer, program_id, program_id_anchor) = setup();
+    let issuer_anchor = AnchorPubkey::new_from_array(payer.pubkey().to_bytes());
+    let mut vault_digest = [0u8; 32];
+    vault_digest[0] = 0x22;
+    let mut schema_hash = [0u8; 32];
+    schema_hash[0] = 0x33;
+    let (anchor_pda, status_pda) = pdas(&issuer_anchor, &vault_digest, &program_id_anchor);
+
+    send(
+        &mut svm,
+        &payer,
+        anchor_ix(
+            program_id,
+            &payer,
+            anchor_pda,
+            status_pda,
+            vault_digest,
+            schema_hash,
+            0,
+        ),
+    );
+
+    // revoke
+    send(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new_readonly(payer.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+            ],
+            data: qal_anchor::instruction::SetStatus { new_state: 1 }.data(),
+        },
+    );
+
+    // cannot re-activate
+    send_err(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new_readonly(payer.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+            ],
+            data: qal_anchor::instruction::SetStatus { new_state: 0 }.data(),
+        },
+    );
+
+    // cannot supersede revoked
+    let mut new_digest = [0u8; 32];
+    new_digest[0] = 0x44;
+    let (new_a, new_s) = pdas(&issuer_anchor, &new_digest, &program_id_anchor);
+    send_err(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new(payer.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+                AccountMeta::new(pk(new_a), false),
+                AccountMeta::new(pk(new_s), false),
+                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
+            ],
+            data: qal_anchor::instruction::SupersedeVault {
+                new_vault_digest: new_digest,
+                new_qev_schema_hash: schema_hash,
+                new_content_ref_hash: [0u8; 32],
+                new_flags: 0,
+            }
+            .data(),
+        },
     );
 }

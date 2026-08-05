@@ -1,11 +1,13 @@
 import { PublicKey } from "@solana/web3.js";
+import bs58 from "bs58";
 import {
   QAL_PROTOCOL,
   QAL_PROTOCOL_VERSION,
+  SUPPORTED_RECEIPT_VERSIONS,
   type QalReceipt,
   type SolanaNetwork,
 } from "./types.js";
-import { COMPROMISED_PROGRAM_ID } from "./network.js";
+import { COMPROMISED_PROGRAM_ID, programIdForNetwork } from "./network.js";
 
 export class ReceiptError extends Error {
   readonly code = "INVALID_RECEIPT" as const;
@@ -37,11 +39,27 @@ function requireHexDigest(value: string, field: string): string {
 
 function requirePubkey(value: string, field: string): string {
   try {
-    const pk = new PublicKey(value);
-    return pk.toBase58();
+    return new PublicKey(value).toBase58();
   } catch {
     throw new ReceiptError(`Receipt ${field} is not a valid Base58 pubkey: ${value}`);
   }
+}
+
+/** Solana signatures are 64 bytes, base58-encoded. */
+export function requireSolanaSignature(value: string, field = "transaction_signature"): string {
+  if (typeof value !== "string" || value.length < 64 || value.length > 128) {
+    throw new ReceiptError(`${field} is not a plausible Solana signature string`);
+  }
+  try {
+    const bytes = bs58.decode(value);
+    if (bytes.length !== 64) {
+      throw new ReceiptError(`${field} must decode to 64 bytes, got ${bytes.length}`);
+    }
+  } catch (err) {
+    if (err instanceof ReceiptError) throw err;
+    throw new ReceiptError(`${field} is not valid base58: ${value.slice(0, 16)}…`);
+  }
+  return value;
 }
 
 export function buildReceipt(params: {
@@ -85,9 +103,12 @@ export function serializeReceipt(receipt: QalReceipt): string {
 }
 
 /**
- * Strict receipt parse. Receipt is untrusted convenience input — always re-check chain.
+ * Strict receipt parse. Receipt is untrusted — always re-check chain.
  */
-export function parseReceipt(json: string): QalReceipt {
+export function parseReceipt(
+  json: string,
+  options?: { allowCustomProgramId?: boolean },
+): QalReceipt {
   let raw: unknown;
   try {
     raw = JSON.parse(json) as unknown;
@@ -104,9 +125,9 @@ export function parseReceipt(json: string): QalReceipt {
   }
 
   const protocol_version = requireString(obj, "protocol_version");
-  if (!protocol_version.startsWith("0.1.")) {
+  if (!(SUPPORTED_RECEIPT_VERSIONS as readonly string[]).includes(protocol_version)) {
     throw new ReceiptError(
-      `Unsupported receipt protocol_version ${protocol_version}`,
+      `Unsupported receipt protocol_version ${protocol_version} (supported: ${SUPPORTED_RECEIPT_VERSIONS.join(", ")})`,
     );
   }
 
@@ -124,25 +145,26 @@ export function parseReceipt(json: string): QalReceipt {
     );
   }
 
-  const genesis_hash =
-    typeof obj.genesis_hash === "string" && obj.genesis_hash.length > 0
-      ? obj.genesis_hash
-      : "";
-  if (!genesis_hash && network === "solana-devnet") {
-    throw new ReceiptError("Receipt missing genesis_hash (required for devnet)");
+  const official = programIdForNetwork(network as SolanaNetwork);
+  if (!options?.allowCustomProgramId && program_id !== official) {
+    throw new ReceiptError(
+      `Receipt program_id ${program_id} is not the official QAL deployment ${official}. Pass allowCustomProgramId to verify custom deployments.`,
+    );
   }
+
+  const genesis_hash = requireString(obj, "genesis_hash");
 
   const vault_digest = requireHexDigest(
     requireString(obj, "vault_digest"),
     "vault_digest",
   );
-  const qev_schema_hash =
-    typeof obj.qev_schema_hash === "string"
-      ? requireHexDigest(obj.qev_schema_hash, "qev_schema_hash")
-      : "0".repeat(64);
+  // Required for 0.1.2 — no zero default
+  const qev_schema_hash = requireHexDigest(
+    requireString(obj, "qev_schema_hash"),
+    "qev_schema_hash",
+  );
 
-  const parentRaw =
-    obj.parent_digest_claim ?? obj.parent_digest ?? null;
+  const parentRaw = obj.parent_digest_claim ?? null;
   let parent_digest_claim: string | null = null;
   if (parentRaw !== null && parentRaw !== undefined) {
     if (typeof parentRaw !== "string") {
@@ -155,6 +177,8 @@ export function parseReceipt(json: string): QalReceipt {
   if (typeof created_slot !== "number" || !Number.isFinite(created_slot) || created_slot < 0) {
     throw new ReceiptError("Receipt created_slot must be a non-negative number");
   }
+
+  const txSig = requireSolanaSignature(requireString(obj, "transaction_signature"));
 
   return {
     protocol: QAL_PROTOCOL,
@@ -174,7 +198,7 @@ export function parseReceipt(json: string): QalReceipt {
         ? null
         : requireString(obj as Record<string, unknown>, "content_reference"),
     parent_digest_claim,
-    transaction_signature: requireString(obj, "transaction_signature"),
+    transaction_signature: txSig,
     created_slot,
   };
 }
