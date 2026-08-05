@@ -1,0 +1,10 @@
+{
+  "name": "@qira/qal-verifier",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal local browser verifier for QAL (no vault upload)",
+  "scripts": {
+    "start": "npx --yes serve -l 4173 .",
+    "build": "echo 'static app — no build step'"
+  }
+}

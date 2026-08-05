@@ -1,0 +1,12 @@
+{
+  "note": "Digests are over full canonicalJSON(vault). Pretty vs compact must match.",
+  "qev_version_pinned": "0.30.0",
+  "schema": "BRY-NFET-SX-VAULT-V2",
+  "valid_vault_digest": "efac11a278e88f6da3840b3a3ea4d2d78f5d74a4c04b9859a9ef8de07f2329df",
+  "tampered_vault_digest": "9fc4d15f98a0c6c788de48ca2c31dedab9ab2897c94839758c072fe95b9a4803",
+  "pretty_digest": "efac11a278e88f6da3840b3a3ea4d2d78f5d74a4c04b9859a9ef8de07f2329df",
+  "compact_digest": "efac11a278e88f6da3840b3a3ea4d2d78f5d74a4c04b9859a9ef8de07f2329df",
+  "digests_match_across_formatting": true,
+  "schema_hash": "b4e2ee1d6604d8dae700dc408a69858f7be5a8c696439dd1fac8973244f3a48e",
+  "canonical_prefix": "{\"content\":{\"algorithm\":\"XChaCha20-Poly1305\",\"ciphertext\":\"IITPnY8nl_JyXLt_e_AgD..."
+}

@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+target/
+.anchor/
+test-ledger/
+.surfpool/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+id.json
+# Keep the program keypair so Program ID stays stable across clones during v0.1.
+# Do not reuse this keypair for wallets that hold funds.
+*-keypair.json
+!programs/qal-anchor/target-keypair.json
+!target/deploy/qal_anchor-keypair.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test evidence / local receipts
+receipts/
+evidence/
+*.qev
+!fixtures/**/*.qev
+test-output/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Package managers
+yarn.lock
+package-lock.json

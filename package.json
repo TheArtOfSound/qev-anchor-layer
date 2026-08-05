@@ -1,0 +1,35 @@
+{
+  "name": "qev-anchor-layer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "QAL — QEV Anchor Layer. Encrypt locally. Anchor publicly. Verify anywhere.",
+  "license": "MIT",
+  "author": "TheArtOfSound",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheArtOfSound/qev-anchor-layer.git"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "build:sdk": "pnpm --filter @qira/qal-sdk build",
+    "build:cli": "pnpm --filter @qira/qal-cli build",
+    "test": "pnpm test:unit",
+    "test:unit": "pnpm --filter @qira/qal-sdk exec node --import tsx --test ../../tests/compatibility/*.test.ts ../../tests/tamper/*.test.ts",
+    "test:devnet": "pnpm --filter @qira/qal-sdk exec node --import tsx --test ../../tests/devnet/*.test.ts",
+    "test:program": "cargo test -p qal-anchor --test test_anchor",
+    "lint": "pnpm -r run lint",
+    "doctor": "pnpm --filter @qira/qal-cli exec node dist/index.js doctor",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "@bryan237l/qev-cli": "0.30.0",
+    "@solana/web3.js": "^1.98.2",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

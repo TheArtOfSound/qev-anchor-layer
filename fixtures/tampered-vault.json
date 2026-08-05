@@ -1,0 +1,22 @@
+{
+  "schema": "BRY-NFET-SX-VAULT-V2",
+  "version": "0.29.0",
+  "created_at": "2026-08-05T14:47:43.678Z",
+  "mode": "self",
+  "kdf": {
+    "algorithm": "argon2id",
+    "opslimit": 1,
+    "memlimit": 33554432,
+    "salt": "bOienhMX2h4ufx-9TYrTvQ"
+  },
+  "wrap": {
+    "algorithm": "XChaCha20-Poly1305",
+    "nonce": "mZV8QBYYuZgPxnSXrVykT_bvvlmx3CWd",
+    "wrapped_key": "OdUER89cYhLjSNJ1RcvrkevuMXhno1YNxUFhEq3zyPYZbExikRXH4jOQHdLErFbk"
+  },
+  "content": {
+    "algorithm": "XChaCha20-Poly1305",
+    "nonce": "g_IVj_VJ3vOJfq8w79EWxVb_am_hwr5i",
+    "ciphertext": "IIAPnY8nl_JyXLt_e_AgDphji-7hrK-y4gVDbLo0Y5DPW8-Ffk8icqNFWQCwmdUao_by"
+  }
+}
