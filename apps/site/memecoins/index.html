@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Memecoins — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="/">QAL</a>
+        <a href="/">Start here</a>
+        <a href="/verify/">Verify</a>
+        <a class="active" href="/memecoins/">Memecoins</a>
+        <a href="/docs/">Details</a>
+        <a href="/security/">Limits</a>
+        <a href="/fund/">Fund / grants</a>
+      </nav>
+
+      <h1>How this can make memecoin culture a bit less dishonest</h1>
+      <p class="lede">
+        Not safer prices. Safer
+        <em>statements</em> — if teams actually use it.
+      </p>
+
+      <div class="warn">
+        Nothing here makes a coin a good investment. Memecoins can still rug,
+        dump, or die. QAL only helps prove whether a sealed package still
+        matches what was committed on-chain.
+      </div>
+
+      <h2>What’s broken today</h2>
+      <p>Typical “trust us” theater:</p>
+      <ul>
+        <li>Roadmap PDF on a site that can be swapped overnight</li>
+        <li>“LP locked” screenshots with no checkable artifact</li>
+        <li>Telegram promises with no durable public commitment</li>
+        <li>“Team doxx vault” that nobody can re-verify independently</li>
+        <li>Silent edits after the pump</li>
+      </ul>
+      <p>
+        People are asked to trust a
+        <strong>host</strong>. Hosts change content. Chains don’t rewrite your
+        old transaction.
+      </p>
+
+      <h2>What QAL + QEV actually add</h2>
+      <ol class="steps">
+        <li>
+          <strong>Seal the statement privately</strong>
+          <p>
+            Team encrypts a disclosure pack with QEV (legal note, wallet list,
+            vesting terms, build hashes, whatever). Public never sees plaintext
+            unless they have the phrase or a deliberate unlock path later.
+          </p>
+        </li>
+        <li>
+          <strong>Publish the fingerprint on Solana</strong>
+          <p>
+            Same second (or before launch), they anchor the vault’s digest.
+            Community saves the vault file + receipt. Now there is a public
+            moment in time: “this exact sealed blob was committed.”
+          </p>
+        </li>
+        <li>
+          <strong>Anyone can re-check without the team’s server</strong>
+          <p>
+            Download vault → hash → compare to chain. If marketing later swaps
+            a PDF on the website, the fingerprint of the
+            <em>old vault</em> still either matches or doesn’t. No dashboard
+            required.
+          </p>
+        </li>
+        <li>
+          <strong>Updates leave a scar, not a cover-up</strong>
+          <p>
+            Need to change the story? Supersede with a new vault and parent
+            link. Want to withdraw an endorsement? Revoke status. History stays
+            readable: “they said A, then moved to B.”
+          </p>
+        </li>
+      </ol>
+
+      <h2>Concrete memecoin use cases</h2>
+      <table class="table-simple">
+        <thead>
+          <tr>
+            <th>Use</th>
+            <th>Why a digest helps</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pre-launch “we won’t mint more” letter</td>
+            <td>
+              Sealed before TGE; later edits need a new vault + supersede trail
+            </td>
+          </tr>
+          <tr>
+            <td>Team wallet / multisig disclosure pack</td>
+            <td>
+              Community can prove the sealed pack is unchanged without doxxing
+              plaintext to the whole internet by default
+            </td>
+          </tr>
+          <tr>
+            <td>LP / treasury process document</td>
+            <td>
+              Not a chain lock itself — but proves the
+              <em>document</em> they pointed to didn’t morph
+            </td>
+          </tr>
+          <tr>
+            <td>Incident postmortem vault</td>
+            <td>
+              After a drama, publish sealed evidence pack + anchor so it can’t
+              be quietly rewritten
+            </td>
+          </tr>
+          <tr>
+            <td>Partnership / collab claims</td>
+            <td>
+              Both sides can countersign / re-anchor their own sealed notes
+              (process design — not magic trust)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Side by side</h2>
+      <div class="compare">
+        <div>
+          <h3>Website / Telegram only</h3>
+          <ul class="nope">
+            <li>Editable after the fact</li>
+            <li>Hard to prove “same file as launch day”</li>
+            <li>You must trust the host</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Sealed vault + QAL anchor</h3>
+          <ul class="checks">
+            <li>Fingerprint fixed on a public ledger</li>
+            <li>Anyone can re-hash offline</li>
+            <li>Revoke / supersede is visible, not silent</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>What still does not get fixed</h2>
+      <ul class="nope">
+        <li>Bad tokenomics</li>
+        <li>Insider dumps</li>
+        <li>Fake social proof</li>
+        <li>A wallet that “anchors” garbage on purpose</li>
+        <li>Lost phrases (encrypted means gone if lost)</li>
+      </ul>
+      <p class="note">
+        Anchoring is not identity. A scammer can encrypt a lie and anchor the
+        lie. What they can’t do as easily is
+        <em>change which sealed lie</em> after people saved the vault + receipt.
+      </p>
+
+      <h2>How this fits what we’re building</h2>
+      <p>
+        QEV = lockbox on your computer.<br />
+        QAL = public wax seal + registry for that lockbox.<br />
+        Solana = shared place the seal is recorded.<br />
+        You / community = people who actually check.
+      </p>
+      <p>
+        For memecoins, the product pitch is not “safe coin.” It’s
+        <strong>checkable sealed commitments</strong> in a market that
+        currently runs on editable vibes.
+      </p>
+
+      <div class="actions">
+        <a class="primary" href="/">Back to walkthrough</a>
+        <a class="secondary" href="/fund/">Funding wallet</a>
+        <a class="secondary" href="/verify/">Verifier</a>
+      </div>
+
+      <footer>
+        Experimental · unaudited · no token ·
+        <a href="/security/">limits</a>
+      </footer>
+    </div>
+  </body>
+</html>

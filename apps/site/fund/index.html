@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fund / grants — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="/">QAL</a>
+        <a href="/">Start here</a>
+        <a href="/verify/">Verify</a>
+        <a href="/memecoins/">Memecoins</a>
+        <a href="/docs/">Details</a>
+        <a href="/security/">Limits</a>
+        <a class="active" href="/fund/">Fund / grants</a>
+      </nav>
+
+      <h1>Funding &amp; grant acceptance</h1>
+      <p class="lede">
+        Public Solana address for supporting QAL / QEV work. Receive only.
+      </p>
+
+      <div class="wallet">
+        <h3>Bryan’s Solana receive wallet</h3>
+        <div class="addr" id="wallet-addr">
+          8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe
+        </div>
+        <button type="button" class="btn-copy" id="copy-wallet">
+          Copy address
+        </button>
+        <p style="margin-top: 0.85rem">
+          <strong>OK for:</strong> Solana grants, sponsorships, bounties,
+          donations, approved payments related to this work.
+        </p>
+        <p>
+          <strong>Not for:</strong> program upgrade authority, mint authority,
+          freeze authority, automated fee payer, “treasury controller,” or
+          anything that requires giving us a seed phrase (never do that).
+        </p>
+      </div>
+
+      <div class="warn">
+        Sending funds is voluntary support of open-source / experimental
+        software. No equity, no token claim, no promise of delivery beyond
+        public repo progress.
+      </div>
+
+      <h2>What you’re funding</h2>
+      <ul class="checks">
+        <li>QEV local encryption tooling (already shipping)</li>
+        <li>QAL anchor + verify protocol (pre-alpha)</li>
+        <li>Honest public evidence and docs — not hype dashboards</li>
+        <li>Path toward audited, carefully deployed infrastructure</li>
+      </ul>
+
+      <h2>Explorer</h2>
+      <p>
+        <a
+          href="https://explorer.solana.com/address/8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe"
+          target="_blank"
+          rel="noopener"
+          >View address on Solana Explorer</a
+        >
+        (mainnet by default in explorer UI — switch network there if needed).
+      </p>
+
+      <div class="actions">
+        <a class="primary" href="/">What we’re building</a>
+        <a class="secondary" href="/memecoins/">Memecoin write-up</a>
+      </div>
+
+      <footer>
+        <a href="/">Home</a>
+      </footer>
+    </div>
+    <script>
+      (function () {
+        var btn = document.getElementById("copy-wallet");
+        var addr = document.getElementById("wallet-addr");
+        if (!btn || !addr) return;
+        btn.addEventListener("click", function () {
+          var text = addr.textContent.trim();
+          function done() {
+            btn.textContent = "Copied";
+            btn.classList.add("done");
+            setTimeout(function () {
+              btn.textContent = "Copy address";
+              btn.classList.remove("done");
+            }, 1600);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+              window.prompt("Copy:", text);
+            });
+          } else {
+            window.prompt("Copy:", text);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

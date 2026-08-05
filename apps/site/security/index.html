@@ -3,57 +3,56 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Security — QAL</title>
+    <title>Limits — QAL</title>
     <link rel="stylesheet" href="/assets/site.css" />
   </head>
   <body>
     <div class="wrap">
       <nav>
         <a class="brand" href="/">QAL</a>
-        <a href="/">Home</a>
+        <a href="/">Start here</a>
         <a href="/verify/">Verify</a>
-        <a href="/evidence/devnet/">Evidence</a>
-        <a href="/docs/">Docs</a>
-        <a class="active" href="/security/">Security</a>
+        <a href="/memecoins/">Memecoins</a>
+        <a href="/docs/">Details</a>
+        <a class="active" href="/security/">Limits</a>
+        <a href="/fund/">Fund / grants</a>
       </nav>
 
-      <h1>Security</h1>
-      <p class="lede">Limits first. No marketing language.</p>
+      <h1>Limits (read this)</h1>
+      <p class="lede">Short and blunt.</p>
 
       <div class="warn">
-        Unaudited pre-alpha. Do not use for production evidence. Devnet
-        deployment of the program was not completed on public RPC.
+        Unaudited pre-alpha. Devnet program upload was not finished on public
+        RPC. Do not use for production evidence or compliance claims.
       </div>
 
       <h2>Abandoned program ID</h2>
-      <p>
-        An early commit included a full program keypair. That ID is dead:
-      </p>
+      <p>An early commit leaked a program keypair. Do not use:</p>
       <pre>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</pre>
-      <p>Intended pre-alpha ID (keypair not in the repo):</p>
+      <p>Intended ID (keypair not in git):</p>
       <pre>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</pre>
 
-      <h2>Not covered</h2>
-      <ul>
-        <li>Compromised machines or stolen wallets</li>
-        <li>Weak or leaked QEV passphrases</li>
-        <li>Malicious dependencies</li>
-        <li>RPC lying or going offline</li>
-        <li>Someone claiming a wallet equals a legal identity</li>
-        <li>Copies of plaintext after decrypt</li>
-        <li>Bugs in Solana, wallets, or QEV</li>
+      <h2>We don’t protect you from</h2>
+      <ul class="nope">
+        <li>Stolen computers or wallets</li>
+        <li>Weak passphrases</li>
+        <li>Malicious npm packages</li>
+        <li>A liar who encrypts a lie and anchors it</li>
+        <li>Losing the only phrase (data stays gone)</li>
+        <li>Bugs in Solana, QEV, or this code</li>
       </ul>
 
-      <h2>Repo</h2>
-      <ul>
-        <li><code>SECURITY.md</code></li>
-        <li><code>DISCLAIMER.md</code></li>
-        <li><code>spec/THREAT_MODEL.md</code></li>
-        <li><code>docs/COMPROMISED_PROGRAM_ID.md</code></li>
-      </ul>
+      <h2>Funding wallet is receive-only</h2>
+      <p>
+        Grants go to
+        <code>8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe</code>
+        — not the program upgrade key.
+        <a href="/fund/">Details</a>
+      </p>
 
       <footer>
-        Report serious issues privately to maintainers.
+        See also <code>SECURITY.md</code> and <code>DISCLAIMER.md</code> in the
+        repo.
       </footer>
     </div>
   </body>

@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QAL — QEV Anchor Layer</title>
+    <title>QAL — lock a vault, prove it on Solana</title>
     <meta
       name="description"
-      content="Local encryption. Public digest anchors. Independent verification."
+      content="Walkthrough: encrypt with QEV, anchor a digest on Solana, verify later. How this helps memecoin honesty without trusting a website."
     />
     <link rel="stylesheet" href="/assets/site.css" />
   </head>
@@ -14,93 +14,238 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="/">QAL</a>
-        <a class="active" href="/">Home</a>
+        <a class="active" href="/">Start here</a>
         <a href="/verify/">Verify</a>
-        <a href="/evidence/devnet/">Evidence</a>
-        <a href="/docs/">Docs</a>
-        <a href="/security/">Security</a>
+        <a href="/memecoins/">Memecoins</a>
+        <a href="/docs/">Details</a>
+        <a href="/security/">Limits</a>
+        <a href="/fund/">Fund / grants</a>
       </nav>
 
-      <h1>QEV Anchor Layer</h1>
-      <p class="lede">
-        Encrypt a file with QEV on your machine. Commit a SHA-256 of that
-        vault to Solana. Anyone can recompute the hash and check the chain.
+      <h1>Lock a file. Prove the lock. Check it later.</h1>
+      <p class="one-liner">
+        QAL is a simple public proof that
+        <em>this exact encrypted package</em> existed — without putting secrets
+        on the blockchain.
       </p>
 
       <div class="warn">
-        Pre-alpha. Unaudited. Not for production evidence or legal claims.
-        There is no token.
+        Pre-alpha · unaudited · not financial advice · not legal notarization ·
+        no token. Use for demos and experiments only until audited and deployed
+        carefully.
       </div>
 
       <div class="actions">
-        <a class="primary" href="/verify/">Verify a vault</a>
-        <a class="secondary" href="/docs/">How it works</a>
+        <a class="primary" href="#walkthrough">Walk through it</a>
+        <a class="secondary" href="/verify/">Try verify</a>
+        <a class="secondary" href="/memecoins/">Memecoin angle</a>
+        <a class="secondary" href="/fund/">Solana funding wallet</a>
+      </div>
+
+      <!-- PROBLEM -->
+      <h2>The problem in one minute</h2>
+      <p>
+        Anyone can post a screenshot, a “locked LP,” a roadmap PDF, or a
+        “team doxx vault” on a website. Websites can be edited. Telegram can
+        lie. Screenshots can be faked.
+      </p>
+      <p>
+        What people actually need is:
+        <strong>can I check, myself, that this exact sealed package is the
+        same one someone committed earlier?</strong>
+      </p>
+      <p>
+        That’s what we’re building. Two pieces:
+      </p>
+      <ul>
+        <li>
+          <strong>QEV</strong> — encrypts the file on your computer (already
+          works offline).
+        </li>
+        <li>
+          <strong>QAL</strong> — puts a tiny fingerprint of that sealed file on
+          Solana, so others can re-check it.
+        </li>
+      </ul>
+
+      <!-- WALKTHROUGH -->
+      <h2 id="walkthrough">Walkthrough (plain English)</h2>
+      <ol class="steps">
+        <li>
+          <strong>You have something sensitive</strong>
+          <p>
+            A team statement, a vesting schedule, a partnership note, dump of
+            build hashes, a “we won’t rug” letter, whatever. You do
+            <em>not</em> want the whole world reading it raw forever — but you
+            may want to prove later that <em>this sealed version</em> is the
+            one you published.
+          </p>
+        </li>
+        <li>
+          <strong>Encrypt it locally with QEV</strong>
+          <p>
+            On your machine (or with the QEV app/CLI), lock the file with a
+            long phrase. You get a
+            <code>.qev</code> vault: scrambled data + metadata. No chain yet.
+            If someone never gets the phrase, they can’t read it.
+          </p>
+        </li>
+        <li>
+          <strong>Make a fingerprint (digest)</strong>
+          <p>
+            QAL takes the full vault JSON, sorts it the same way every time,
+            and runs SHA-256. Result: a 64-character hex fingerprint. Change
+            one byte of the vault → fingerprint changes. Formatting noise does
+            not.
+          </p>
+        </li>
+        <li>
+          <strong>Anchor the fingerprint on Solana</strong>
+          <p>
+            A wallet you control signs a transaction that stores:
+            the fingerprint, who issued it, and a status (active / revoked /
+            replaced).
+            <strong>Not</strong> the password. <strong>Not</strong> the file.
+            <strong>Not</strong> the keys.
+          </p>
+        </li>
+        <li>
+          <strong>You keep a small receipt</strong>
+          <p>
+            A JSON receipt points at the on-chain record (addresses, network,
+            tx). Share the vault + receipt with people who should be able to
+            check. They don’t have to trust your website.
+          </p>
+        </li>
+        <li>
+          <strong>Anyone verifies independently</strong>
+          <p>
+            Recompute the fingerprint from the vault file. Read the Solana
+            account. Same hash? → package matches. Status still active, or
+            revoked / superseded? → separate answer. Match and status are never
+            collapsed into one vague “OK.”
+          </p>
+        </li>
+      </ol>
+
+      <pre>file
+  → QEV encrypt (local)
+  → fingerprint SHA-256
+  → Solana stores fingerprint + status
+  → others re-hash + read chain</pre>
+
+      <h2>What “safer” means here (especially for memecoins)</h2>
+      <p>
+        Memecoins are not made “safe” by any tool. They can still go to zero.
+        Rugs still happen. What QAL can improve is
+        <strong>honesty about sealed statements</strong>:
+      </p>
+      <ul class="checks">
+        <li>
+          Team can lock a disclosure vault <em>before</em> hype peaks and
+          prove the sealed blob didn’t change later.
+        </li>
+        <li>
+          If they need to update the story, they
+          <em>supersede</em> with a new vault and leave a public trail — not
+          silent website edits.
+        </li>
+        <li>
+          If a promise is withdrawn, they can
+          <em>revoke</em> the endorsement without erasing history (people still
+          see it was once anchored).
+        </li>
+        <li>
+          Community can verify with their own tools — not “trust our
+          dashboard.”
+        </li>
+      </ul>
+      <p>
+        Full write-up:
+        <a href="/memecoins/">How this relates to memecoins →</a>
+      </p>
+
+      <h2>What this is not</h2>
+      <ul class="nope">
+        <li>Not on-chain encryption (secrets never go on Solana)</li>
+        <li>Not a guarantee the team is honest or human</li>
+        <li>Not proof of real-world identity just because a wallet signed</li>
+        <li>Not a memecoin, not a launchpad, not a token</li>
+        <li>Not production-ready or audited yet</li>
+      </ul>
+
+      <h2>Try it on this machine</h2>
+      <div class="actions">
+        <a class="primary" href="/verify/">Open the verifier</a>
         <a
           class="secondary"
           href="https://github.com/TheArtOfSound/qev-anchor-layer"
           target="_blank"
           rel="noopener"
-          >Source</a
+          >Code on GitHub</a
         >
       </div>
-
-      <h2>The idea</h2>
-      <p>
-        QEV already does local encryption (Argon2id + XChaCha20-Poly1305).
-        QAL does not reimplement that. It only records that a specific
-        encrypted envelope existed, who signed the anchor, and whether that
-        endorsement was later revoked or superseded.
-      </p>
-      <p>
-        The vault itself stays off-chain. On-chain state is digests, pubkeys,
-        and status — not plaintext, phrases, or keys.
+      <p class="note">
+        Verifier hashes in your browser. The vault is not uploaded to us.
+        Devnet program deploy is still incomplete on public RPC — verification
+        against chain only works once the program is live.
       </p>
 
-      <h2>Flow</h2>
-      <pre>file → QEV encrypt → canonical JSON → SHA-256 → Solana record → receipt
+      <!-- FUNDING -->
+      <h2 id="fund">Solana wallet for funding &amp; grants</h2>
+      <p>
+        If you want to support development, send
+        <strong>sponsorships, bounties, or approved grants</strong> to Bryan’s
+        public receive wallet on Solana. This is for funding acceptance — not
+        a contract, not the program authority, not a fee-payer for deploys.
+      </p>
 
-verify: recompute digest → read account → match? → status?</pre>
-
-      <h2>On-chain</h2>
-      <div class="row two">
-        <div class="block">
-          <h3>Stored</h3>
-          <p>Vault digest, schema hash, issuer, controller, status, optional parent claim.</p>
+      <div class="wallet" id="funding-wallet">
+        <h3>Receive address (Solana)</h3>
+        <div class="addr" id="wallet-addr">
+          8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe
         </div>
-        <div class="block">
-          <h3>Never stored</h3>
-          <p>Plaintext, passphrase, derived keys, content keys, private material.</p>
-        </div>
+        <button type="button" class="btn-copy" id="copy-wallet">
+          Copy address
+        </button>
+        <p style="margin-top: 0.75rem">
+          Use for: grants, sponsorships, donations, approved payments.
+        </p>
+        <p>
+          Do <strong>not</strong> use as: program upgrade key, mint authority,
+          automated signer, or “send me deploy fees here.”
+        </p>
       </div>
 
-      <h2>Status of this build</h2>
-      <ul class="plain">
-        <li><span>Version</span> 0.1.2 pre-alpha</li>
-        <li>
-          <span>Repo</span>
-          <a href="https://github.com/TheArtOfSound/qev-anchor-layer"
-            >TheArtOfSound/qev-anchor-layer</a
-          >
-        </li>
-        <li>
-          <span>Program</span>
-          6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR
-        </li>
-        <li><span>Devnet</span> deploy not finalized (RPC upload failed)</li>
-        <li><span>Token</span> none</li>
-      </ul>
-
-      <p class="note">
-        A digest match means: this exact encrypted vault matches the on-chain
-        commitment. It does not mean the signer wrote the original document,
-        or that the contents are true.
-      </p>
-
       <footer>
-        MIT ·
-        <a href="/security/">Security notes</a> ·
-        QEV is separate software at ImagineQira
+        Built by TheArtOfSound / Qira · MIT ·
+        <a href="/security/">Read the limits</a>
       </footer>
     </div>
+    <script>
+      (function () {
+        var btn = document.getElementById("copy-wallet");
+        var addr = document.getElementById("wallet-addr");
+        if (!btn || !addr) return;
+        btn.addEventListener("click", function () {
+          var text = addr.textContent.trim();
+          function done() {
+            btn.textContent = "Copied";
+            btn.classList.add("done");
+            setTimeout(function () {
+              btn.textContent = "Copy address";
+              btn.classList.remove("done");
+            }, 1600);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+              window.prompt("Copy address:", text);
+            });
+          } else {
+            window.prompt("Copy address:", text);
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

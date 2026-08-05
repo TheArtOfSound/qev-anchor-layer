@@ -14,35 +14,58 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="/">QAL</a>
-        <a href="/">Home</a>
+        <a href="/">Start here</a>
         <a class="active" href="/verify/">Verify</a>
-        <a href="/evidence/devnet/">Evidence</a>
-        <a href="/docs/">Docs</a>
-        <a href="/security/">Security</a>
+        <a href="/memecoins/">Memecoins</a>
+        <a href="/docs/">Details</a>
+        <a href="/security/">Limits</a>
+        <a href="/fund/">Fund / grants</a>
       </nav>
 
-      <h1>Verify</h1>
+      <h1>Verify a vault</h1>
       <p class="lede">
-        Hashing happens in this tab. The vault file is not uploaded to a
-        server. Chain reads are public RPC only.
+        Step 1: pick the vault file. Step 2: add the receipt if you have one.
+        Step 3: hit Verify. Hashing stays in this tab.
       </p>
 
       <div class="warn">
-        Use a QAL receipt when you have one. Issuer alone only finds a PDA
-        for the current digest — a tampered vault usually looks like “not
-        found,” not “mismatch.” CLI verification is stricter than this page.
+        Chain verify only works when the QAL program is live on that network.
+        Right now public Devnet deploy is incomplete — you can still load a
+        vault and see local hashing once connected. Prefer a receipt when
+        possible.
       </div>
 
+      <ol class="steps" style="margin-bottom: 1.5rem">
+        <li>
+          <strong>Choose the .qev / JSON vault</strong>
+          <p>The sealed package someone shared with you.</p>
+        </li>
+        <li>
+          <strong>Add the receipt (best)</strong>
+          <p>
+            Points at the exact on-chain record. Without it you need the issuer
+            wallet and only get “found / not found” for the current hash.
+          </p>
+        </li>
+        <li>
+          <strong>Read the result</strong>
+          <p>
+            Digest match and status (active / revoked / …) are separate lines —
+            not one vague pass/fail.
+          </p>
+        </li>
+      </ol>
+
       <div id="drop" class="drop">
-        Drop a QEV vault JSON, or
+        Drop vault file, or
         <label style="display: inline; color: var(--link); cursor: pointer">
-          choose a file
+          choose file
           <input id="file" type="file" accept=".json,.qev,application/json" hidden />
         </label>
         <div id="fileName" style="margin-top: 0.5rem; font-size: 0.85rem"></div>
       </div>
 
-      <label for="receiptFile">Receipt JSON (recommended)</label>
+      <label for="receiptFile">Receipt JSON</label>
       <input id="receiptFile" type="file" accept=".json,application/json" />
 
       <label for="network">Network</label>
@@ -60,7 +83,7 @@
         spellcheck="false"
       />
 
-      <label for="rpc">RPC override</label>
+      <label for="rpc">RPC (optional)</label>
       <input
         id="rpc"
         type="text"
@@ -77,7 +100,7 @@
       </div>
 
       <footer>
-        <a href="/">Home</a>
+        <a href="/">Walkthrough</a>
       </footer>
     </div>
     <script src="/verify/vendor/solana-web3.min.js"></script>
