@@ -51,22 +51,29 @@ jobs:
         with:
           workspaces: "."
 
-      - name: Install Solana platform tools / CLI
+      # Host-side program checks that do not need SBF platform tools.
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy (host)
+        run: cargo clippy -p qal-anchor --all-targets -- -D warnings
+
+      - name: Install Solana CLI + platform tools (stable)
         run: |
           set -euo pipefail
-          sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.21/install)"
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
           SOLANA_BIN="$HOME/.local/share/solana/install/active_release/bin"
           echo "$SOLANA_BIN" >> "$GITHUB_PATH"
           export PATH="$SOLANA_BIN:$PATH"
           solana --version
-          solana-keygen --version
+          which cargo-build-sbf || ls "$SOLANA_BIN" | head -50
+          cargo-build-sbf --version
 
       - name: Install Anchor 1.0.1
         run: |
           set -euo pipefail
-          export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$PATH"
           cargo install --git https://github.com/coral-xyz/anchor --tag v1.0.1 anchor-cli --locked --force
-          export PATH="$HOME/.cargo/bin:$PATH"
           anchor --version
 
       # Coherent ephemeral identity for compile/test only (not production deploy key).
@@ -83,7 +90,7 @@ jobs:
           grep declare_id programs/qal-anchor/src/lib.rs
           grep qal_anchor Anchor.toml
 
-      - name: Anchor build
+      - name: Anchor build (SBF)
         run: |
           set -euo pipefail
           export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$PATH"
@@ -94,12 +101,6 @@ jobs:
           set -euo pipefail
           export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$PATH"
           cargo test -p qal-anchor --test test_anchor -- --nocapture
-
-      - name: cargo fmt
-        run: cargo fmt --all -- --check
-
-      - name: cargo clippy
-        run: cargo clippy -p qal-anchor --all-targets -- -D warnings
 
       - name: Verifier build (lockfile-only, no network fallback)
         run: pnpm build:verifier
