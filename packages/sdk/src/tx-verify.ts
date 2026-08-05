@@ -1,18 +1,17 @@
 /**
  * Transaction provenance verification for QAL receipts.
  *
- * Tier: deeper verification. Confirms the receipt signature corresponds to a
- * real cluster transaction that invoked the expected program and involved the
- * expected accounts / issuer.
+ * Requires deterministic instruction data — never treats log mentions as proof.
+ * Returns TRANSACTION_PROVENANCE_INCOMPLETE when RPC does not expose enough data.
  */
 
 import {
   Connection,
   PublicKey,
-  type ConfirmedTransactionMeta,
   type ParsedTransactionWithMeta,
   type VersionedTransactionResponse,
 } from "@solana/web3.js";
+import bs58 from "bs58";
 import type { VerificationOutcome } from "./types.js";
 
 export interface TxProvenanceOk {
@@ -32,16 +31,18 @@ function err(outcome: VerificationOutcome, error: string): TxProvenanceErr {
   return { ok: false, outcome, error };
 }
 
+/** Anchor instruction discriminators we accept for provenance. */
+function isQalIxData(data: Buffer, vaultDigest: Uint8Array): boolean {
+  if (data.length < 8 + 32) return false;
+  // First arg after 8-byte disc is vault_digest for anchor_vault and new_vault_digest for supersede_vault
+  const first32 = data.subarray(8, 8 + 32);
+  if (Buffer.from(first32).equals(Buffer.from(vaultDigest))) return true;
+  // Also allow digest anywhere after disc (defensive for future layouts)
+  return data.subarray(8).includes(Buffer.from(vaultDigest));
+}
+
 /**
  * Verify transaction provenance for an anchor receipt.
- *
- * Checks:
- * 1. Signature exists on cluster
- * 2. Transaction invokes expected program
- * 3. Issuer is among signers
- * 4. Anchor PDA is in account keys (writable)
- * 5. Slot is present (compared to created_slot by caller)
- * 6. Instruction data (where available) contains vault digest bytes
  */
 export async function verifyAnchorTransactionProvenance(
   connection: Connection,
@@ -61,14 +62,10 @@ export async function verifyAnchorTransactionProvenance(
       maxSupportedTransactionVersion: 0,
     });
   } catch (e) {
-    return err(
-      "RPC_UNAVAILABLE",
-      e instanceof Error ? e.message : String(e),
-    );
+    return err("RPC_UNAVAILABLE", e instanceof Error ? e.message : String(e));
   }
 
   if (!tx) {
-    // Try parsed as fallback for some RPCs
     let parsed: ParsedTransactionWithMeta | null = null;
     try {
       parsed = await connection.getParsedTransaction(params.signature, {
@@ -76,7 +73,7 @@ export async function verifyAnchorTransactionProvenance(
         maxSupportedTransactionVersion: 0,
       });
     } catch {
-      // ignore
+      // fall through
     }
     if (!parsed) {
       return err("TRANSACTION_NOT_FOUND", `Transaction not found: ${params.signature}`);
@@ -93,7 +90,6 @@ export async function verifyAnchorTransactionProvenance(
 
   const message = tx.transaction.message;
   const accountKeys = message.staticAccountKeys.map((k) => k.toBase58());
-  // loaded addresses for v0
   if (tx.meta?.loadedAddresses) {
     for (const k of tx.meta.loadedAddresses.writable) {
       accountKeys.push(k.toBase58());
@@ -107,7 +103,6 @@ export async function verifyAnchorTransactionProvenance(
   const issuerStr = params.issuer.toBase58();
   const anchorStr = params.anchorAddress.toBase58();
 
-  // Signers: first numRequiredSignatures static keys
   const numSigners = message.header.numRequiredSignatures;
   const signers = message.staticAccountKeys
     .slice(0, numSigners)
@@ -126,42 +121,89 @@ export async function verifyAnchorTransactionProvenance(
     );
   }
 
-  // Program invoked?
-  let programInvoked = false;
-  const compiled = message.compiledInstructions;
-  for (const ix of compiled) {
-    const pid = message.staticAccountKeys[ix.programIdIndex]?.toBase58();
+  // Resolve account key by index (static + loaded writable + loaded readonly)
+  const keyAt = (index: number): string | undefined => accountKeys[index];
+
+  type FoundIx = { data: Buffer; source: "top-level" | "inner" };
+  const qalIxs: FoundIx[] = [];
+
+  // Top-level compiled instructions
+  for (const ix of message.compiledInstructions) {
+    const pid = keyAt(ix.programIdIndex);
     if (pid === programIdStr) {
-      programInvoked = true;
-      // Check digest in instruction data (after 8-byte discriminator)
-      const data = Buffer.from(ix.data);
-      if (data.length >= 8 + 32) {
-        const digestInIx = data.subarray(8, 8 + 32);
-        if (!Buffer.from(digestInIx).equals(Buffer.from(params.vaultDigest))) {
-          // For supersede, digest is still first arg after disc for new digest
-          // Accept if digest appears anywhere after disc
-          const hay = data.subarray(8);
-          const needle = Buffer.from(params.vaultDigest);
-          if (!hay.includes(needle)) {
+      qalIxs.push({ data: Buffer.from(ix.data), source: "top-level" });
+    }
+  }
+
+  // Inner instructions (CPI) — inspect actual instruction data, never logs alone
+  if (tx.meta?.innerInstructions) {
+    for (const group of tx.meta.innerInstructions) {
+      for (const inner of group.instructions) {
+        const pid = keyAt(inner.programIdIndex);
+        if (pid === programIdStr) {
+          // web3.js may return data as base58 string or number[]
+          let data: Buffer;
+          const raw = inner.data as unknown;
+          if (typeof raw === "string") {
+            try {
+              data = Buffer.from(bs58.decode(raw));
+            } catch {
+              try {
+                data = Buffer.from(raw, "base64");
+              } catch {
+                return err(
+                  "TRANSACTION_PROVENANCE_INCOMPLETE",
+                  "Inner QAL instruction data could not be decoded",
+                );
+              }
+            }
+          } else if (Array.isArray(raw)) {
+            data = Buffer.from(raw as number[]);
+          } else if (raw instanceof Uint8Array) {
+            data = Buffer.from(raw);
+          } else {
             return err(
-              "TRANSACTION_DIGEST_MISMATCH",
-              "Vault digest not found in instruction data for QAL program invocation",
+              "TRANSACTION_PROVENANCE_INCOMPLETE",
+              "Inner QAL instruction data format unsupported",
             );
           }
+          qalIxs.push({ data, source: "inner" });
         }
       }
     }
   }
 
-  // Also scan inner instructions for CPI (unlikely for our program)
-  if (!programInvoked && tx.meta) {
-    programInvoked = logMentionsProgram(tx.meta, programIdStr);
-  }
-
-  if (!programInvoked) {
+  if (qalIxs.length === 0) {
     return err(
       "TRANSACTION_PROGRAM_MISMATCH",
-      `Transaction did not invoke program ${programIdStr}`,
+      `No top-level or inner instruction invoked program ${programIdStr}`,
+    );
+  }
+
+  // Require at least one QAL ix with matching digest in instruction data
+  let digestMatched = false;
+  let anyDataTooShort = false;
+  for (const ix of qalIxs) {
+    if (ix.data.length < 8 + 32) {
+      anyDataTooShort = true;
+      continue;
+    }
+    if (isQalIxData(ix.data, params.vaultDigest)) {
+      digestMatched = true;
+      break;
+    }
+  }
+
+  if (!digestMatched) {
+    if (anyDataTooShort || qalIxs.every((i) => i.data.length < 8 + 32)) {
+      return err(
+        "TRANSACTION_PROVENANCE_INCOMPLETE",
+        "RPC response exposed QAL program invocation but instruction data incomplete for digest match",
+      );
+    }
+    return err(
+      "TRANSACTION_DIGEST_MISMATCH",
+      "Vault digest not found in any QAL instruction data (top-level or inner)",
     );
   }
 
@@ -170,8 +212,6 @@ export async function verifyAnchorTransactionProvenance(
     params.expectedSlot > 0 &&
     tx.slot !== params.expectedSlot
   ) {
-    // Slot mismatch is soft-hard: anchors store Clock::get slot at creation;
-    // tx.slot should match created_slot for same confirmation path.
     return err(
       "TRANSACTION_SLOT_MISMATCH",
       `Transaction slot ${tx.slot} != anchor created_slot ${params.expectedSlot}`,
@@ -179,11 +219,6 @@ export async function verifyAnchorTransactionProvenance(
   }
 
   return { ok: true, slot: tx.slot };
-}
-
-function logMentionsProgram(meta: ConfirmedTransactionMeta, programId: string): boolean {
-  const logs = meta.logMessages ?? [];
-  return logs.some((l) => l.includes(programId));
 }
 
 function verifyParsed(
@@ -214,37 +249,88 @@ function verifyParsed(
     return err("TRANSACTION_ANCHOR_MISMATCH", "Anchor not in parsed account keys");
   }
 
-  let programInvoked = false;
-  for (const ix of msg.instructions) {
+  type Found = { data: Buffer };
+  const qalIxs: Found[] = [];
+
+  const collect = (ix: {
+    programId?: PublicKey | string;
+    data?: string;
+    parsed?: unknown;
+  }) => {
     const pid =
-      "programId" in ix
-        ? typeof ix.programId === "string"
+      ix.programId === undefined
+        ? ""
+        : typeof ix.programId === "string"
           ? ix.programId
-          : ix.programId.toBase58()
-        : "";
-    if (pid === params.programId.toBase58()) {
-      programInvoked = true;
-      if ("data" in ix && typeof ix.data === "string") {
-        try {
-          const raw = Buffer.from(ix.data, "base64");
-          if (raw.length >= 8 + 32) {
-            const hay = raw.subarray(8);
-            if (!hay.includes(Buffer.from(params.vaultDigest))) {
-              return err(
-                "TRANSACTION_DIGEST_MISMATCH",
-                "Vault digest not in parsed instruction data",
-              );
-            }
-          }
-        } catch {
-          // ignore decode issues for partial
-        }
+          : ix.programId.toBase58();
+    if (pid !== params.programId.toBase58()) return;
+    if (typeof ix.data !== "string") {
+      // Partially decoded / jsonParsed without raw data
+      return;
+    }
+    // Parsed transactions use base58 for data on many RPCs; try base58 then base64
+    let raw: Buffer | null = null;
+    try {
+      raw = Buffer.from(bs58.decode(ix.data));
+    } catch {
+      try {
+        const b64 = Buffer.from(ix.data, "base64");
+        if (b64.length >= 8) raw = b64;
+      } catch {
+        raw = null;
+      }
+    }
+    if (raw && raw.length >= 8) qalIxs.push({ data: raw });
+  };
+
+  for (const ix of msg.instructions) {
+    collect(ix as { programId?: PublicKey | string; data?: string });
+  }
+  if (parsed.meta?.innerInstructions) {
+    for (const group of parsed.meta.innerInstructions) {
+      for (const inner of group.instructions) {
+        collect(inner as { programId?: PublicKey | string; data?: string });
       }
     }
   }
-  if (!programInvoked) {
-    return err("TRANSACTION_PROGRAM_MISMATCH", "Program not in parsed instructions");
+
+  if (qalIxs.length === 0) {
+    // Program may appear only as partially decoded — incomplete
+    const anyProgramMention = msg.instructions.some((ix) => {
+      const pid =
+        "programId" in ix
+          ? typeof ix.programId === "string"
+            ? ix.programId
+            : ix.programId.toBase58()
+          : "";
+      return pid === params.programId.toBase58();
+    });
+    if (anyProgramMention) {
+      return err(
+        "TRANSACTION_PROVENANCE_INCOMPLETE",
+        "Parsed transaction invokes QAL but instruction data is not available for digest verification",
+      );
+    }
+    return err(
+      "TRANSACTION_PROGRAM_MISMATCH",
+      "Program not in parsed top-level or inner instructions",
+    );
   }
+
+  let matched = false;
+  for (const ix of qalIxs) {
+    if (isQalIxData(ix.data, params.vaultDigest)) {
+      matched = true;
+      break;
+    }
+  }
+  if (!matched) {
+    return err(
+      "TRANSACTION_DIGEST_MISMATCH",
+      "Vault digest not found in parsed QAL instruction data",
+    );
+  }
+
   if (params.expectedSlot > 0 && parsed.slot !== params.expectedSlot) {
     return err(
       "TRANSACTION_SLOT_MISMATCH",

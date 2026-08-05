@@ -51,7 +51,8 @@ export type VerificationOutcome =
   | "TRANSACTION_ANCHOR_MISMATCH"
   | "TRANSACTION_SLOT_MISMATCH"
   | "TRANSACTION_DIGEST_MISMATCH"
-  | "TRANSACTION_INVALID_SIGNATURE";
+  | "TRANSACTION_INVALID_SIGNATURE"
+  | "TRANSACTION_PROVENANCE_INCOMPLETE";
 
 export type VerificationTier = {
   /** Local vault schema + digest recompute. */

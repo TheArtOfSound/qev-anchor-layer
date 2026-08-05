@@ -1,9 +1,9 @@
 /**
- * Devnet integration test.
- *
- * Skipped unless QAL_DEVNET=1 and program is deployed with a funded wallet.
+ * Devnet integration test — vertical slice with durable evidence output.
  *
  *   QAL_DEVNET=1 pnpm test:devnet
+ *
+ * Requires deployed program + funded wallet (not grant receive wallet).
  */
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
@@ -17,11 +17,11 @@ import {
   programExists,
   QAL_PROGRAM_ID,
   anchorVault,
-  verifyVault,
+  verifyVaultWithReceipt,
   revokeAnchor,
-  setStatus,
-  STATUS_CODES,
-  fetchAnchorForIssuerDigest,
+  supersedeVault,
+  serializeReceipt,
+  fetchGenesisHash,
   hexToBytes,
 } from "../../packages/sdk/src/index.js";
 import { loadWallet } from "../../packages/cli/src/wallet.js";
@@ -32,6 +32,7 @@ const network = "solana-devnet" as const;
 describe("devnet integration", { skip: !RUN }, () => {
   let wallet: Keypair;
   let connection: Connection;
+  let evidenceDir: string;
 
   before(async () => {
     wallet = await loadWallet();
@@ -46,17 +47,33 @@ describe("devnet integration", { skip: !RUN }, () => {
     if (bal < 50_000_000) {
       throw new Error(`Wallet underfunded on devnet: ${bal} lamports`);
     }
+    evidenceDir = path.join(
+      process.cwd(),
+      "evidence",
+      "devnet",
+      "v0.1.2",
+    );
+    await fs.mkdir(evidenceDir, { recursive: true });
   });
 
-  it("full flow: encrypt → anchor → verify → tamper fail → revoke → supersede", async () => {
-    const evidenceDir = path.join(process.cwd(), "test-output");
-    await fs.mkdir(evidenceDir, { recursive: true });
+  it("full flow: encrypt → anchor → verify receipt → tamper → revoke → supersede", async () => {
+    const genesis = await fetchGenesisHash(connection);
+    await fs.writeFile(path.join(evidenceDir, "genesis-hash.txt"), `${genesis}\n`);
+    await fs.writeFile(
+      path.join(evidenceDir, "program-id.txt"),
+      `${QAL_PROGRAM_ID.toBase58()}\n`,
+    );
+    await fs.writeFile(
+      path.join(evidenceDir, "source-commit.txt"),
+      `${process.env.QAL_SOURCE_COMMIT ?? "unknown"}\n`,
+    );
 
     // 1–2. Generate vault + digest
     const vault = await encryptVaultV2({
       plaintext: JSON.stringify({
         evidence: "qal-devnet-e2e",
         ts: new Date().toISOString(),
+        note: "experimental pre-alpha — not production evidence",
       }),
       password: "devnet-test-phrase-not-for-production-use",
       mode: "self",
@@ -64,13 +81,8 @@ describe("devnet integration", { skip: !RUN }, () => {
       memlimit: 32 * 1024 * 1024,
     });
     const d = computeVaultDigest(vault);
-    await fs.writeFile(
-      path.join(evidenceDir, "vault.json"),
-      JSON.stringify(vault, null, 2),
-    );
-    await fs.writeFile(path.join(evidenceDir, "digest.txt"), d.digest);
 
-    // 3–5. Anchor + fetch PDA + compare
+    // 3–5. Anchor
     const { receipt, signature, anchor } = await anchorVault(
       { vault, network },
       wallet,
@@ -80,20 +92,25 @@ describe("devnet integration", { skip: !RUN }, () => {
     assert.equal(anchor.issuer, wallet.publicKey.toBase58());
 
     await fs.writeFile(
-      path.join(evidenceDir, "receipt.json"),
-      JSON.stringify(receipt, null, 2),
+      path.join(evidenceDir, "anchor-receipt.json"),
+      serializeReceipt(receipt),
     );
-    await fs.writeFile(path.join(evidenceDir, "tx.txt"), signature);
+    await fs.writeFile(
+      path.join(evidenceDir, "anchor-transaction.txt"),
+      `${signature}\n`,
+    );
 
-    // 6. Verify original
-    const ok = await verifyVault(vault, {
-      network,
-      issuer: wallet.publicKey.toBase58(),
+    // 6. Receipt-directed verify (full tiers including tx provenance)
+    const ok = await verifyVaultWithReceipt(vault, receipt, {
+      connection,
+      verifyTransaction: true,
     });
     assert.equal(ok.cryptographic_match, true);
     assert.equal(ok.outcome, "VALID_ACTIVE");
+    assert.equal(ok.tiers.transaction_provenance, true);
+    assert.equal(ok.official_program, true);
 
-    // 7. Tamper one byte → mismatch
+    // 7. Tamper against receipt → DIGEST_MISMATCH
     const tampered = structuredClone(vault) as {
       content: { ciphertext: string };
       [k: string]: unknown;
@@ -101,81 +118,134 @@ describe("devnet integration", { skip: !RUN }, () => {
     const ct = tampered.content.ciphertext.split("");
     ct[0] = ct[0] === "A" ? "B" : "A";
     tampered.content.ciphertext = ct.join("");
-    // schema still V2 but content changed — may still validate structure
-    const badDigest = computeVaultDigest(tampered);
-    assert.notEqual(badDigest.digest, d.digest);
-    const mismatch = await verifyVault(tampered, {
-      network,
-      issuer: wallet.publicKey.toBase58(),
+    const mismatch = await verifyVaultWithReceipt(tampered, receipt, {
+      connection,
+      verifyTransaction: false, // focus on digest path
     });
-    // PDA is derived from local digest, so tampered vault looks like ANCHOR_NOT_FOUND
-    // or if we verified against original digest path — document both behaviors.
     assert.equal(mismatch.cryptographic_match, false);
-    assert.ok(
-      mismatch.outcome === "ANCHOR_NOT_FOUND" || mismatch.outcome === "DIGEST_MISMATCH",
+    assert.equal(mismatch.outcome, "DIGEST_MISMATCH");
+
+    // 8–9. Revoke; still match with VALID_REVOKED
+    const revokeSig = await revokeAnchor(
+      wallet.publicKey,
+      d.digestBytes,
+      wallet,
+      { network },
+    );
+    await fs.writeFile(
+      path.join(evidenceDir, "revoke-transaction.txt"),
+      `${revokeSig}\n`,
     );
 
-    // 8–9. Revoke; digest still matches with revoked status
-    await revokeAnchor(wallet.publicKey, d.digestBytes, wallet, { network });
-    const revoked = await verifyVault(vault, {
-      network,
-      issuer: wallet.publicKey.toBase58(),
+    const revoked = await verifyVaultWithReceipt(vault, receipt, {
+      connection,
+      verifyTransaction: false,
     });
+    // controller still matches receipt (issuer=controller)
     assert.equal(revoked.cryptographic_match, true);
     assert.equal(revoked.outcome, "VALID_REVOKED");
     assert.equal(revoked.status, "revoked");
 
-    // 10–11. Second revision with parent digest
-    const vault2 = await encryptVaultV2({
-      plaintext: JSON.stringify({ evidence: "qal-devnet-e2e-v2" }),
+    // For supersede we need active/disputed — use a fresh vault pair
+    const vaultA = await encryptVaultV2({
+      plaintext: JSON.stringify({ rev: 1, t: Date.now() }),
       password: "devnet-test-phrase-not-for-production-use",
       mode: "self",
       opslimit: 1,
       memlimit: 32 * 1024 * 1024,
     });
-    const d2 = computeVaultDigest(vault2);
-    const { receipt: r2 } = await anchorVault(
-      { vault: vault2, network, parentDigest: d.digest },
-      wallet,
-      { network },
-    );
-    assert.equal(r2.parent_digest, d.digest);
+    const vaultB = await encryptVaultV2({
+      plaintext: JSON.stringify({ rev: 2, t: Date.now() }),
+      password: "devnet-test-phrase-not-for-production-use",
+      mode: "self",
+      opslimit: 1,
+      memlimit: 32 * 1024 * 1024,
+    });
+    const dA = computeVaultDigest(vaultA);
+    const dB = computeVaultDigest(vaultB);
 
-    await setStatus(
+    await anchorVault({ vault: vaultA, network }, wallet, { network });
+    const {
+      receipt: rB,
+      signature: supersedeSig,
+      fullySuperseded,
+      oldDigest,
+      newDigest,
+    } = await supersedeVault(
       {
+        oldVault: vaultA,
+        newVault: vaultB,
         issuer: wallet.publicKey,
-        vaultDigest: d.digestBytes,
-        newState: STATUS_CODES.superseded,
       },
       wallet,
       { network },
     );
-
-    const { anchor: a2 } = await fetchAnchorForIssuerDigest(
-      wallet.publicKey,
-      hexToBytes(d2.digest),
-      { network },
-    );
-    assert.ok(a2);
-    assert.equal(a2!.parent_digest, d.digest);
+    assert.equal(fullySuperseded, true);
+    assert.equal(oldDigest, dA.digest);
+    assert.equal(newDigest, dB.digest);
+    assert.equal(rB.parent_digest_claim, dA.digest);
 
     await fs.writeFile(
-      path.join(evidenceDir, "evidence-summary.json"),
-      JSON.stringify(
+      path.join(evidenceDir, "supersede-transaction.txt"),
+      `${supersedeSig}\n`,
+    );
+    await fs.writeFile(
+      path.join(evidenceDir, "supersede-receipt.json"),
+      serializeReceipt(rB),
+    );
+
+    const lineage = await verifyVaultWithReceipt(vaultB, rB, {
+      connection,
+      verifyTransaction: true,
+    });
+    assert.equal(lineage.outcome, "VALID_ACTIVE");
+    assert.equal(lineage.parent_digest_claim, dA.digest);
+
+    await fs.writeFile(
+      path.join(evidenceDir, "vault-digests.json"),
+      `${JSON.stringify(
         {
-          program_id: QAL_PROGRAM_ID.toBase58(),
-          issuer: wallet.publicKey.toBase58(),
-          v1_digest: d.digest,
-          v1_anchor: receipt.anchor_address,
-          v1_tx: signature,
-          v2_digest: d2.digest,
-          v2_anchor: r2.anchor_address,
-          v2_tx: r2.transaction_signature,
-          explorer_v1: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+          primary_digest: d.digest,
+          primary_anchor: receipt.anchor_address,
+          primary_status: receipt.status_address,
+          primary_tx: signature,
+          primary_final_status: "revoked",
+          supersede_old_digest: dA.digest,
+          supersede_new_digest: dB.digest,
+          supersede_tx: supersedeSig,
+          supersede_new_anchor: rB.anchor_address,
         },
         null,
         2,
-      ),
+      )}\n`,
+    );
+
+    await fs.writeFile(
+      path.join(evidenceDir, "explorer-links.md"),
+      [
+        "# Devnet explorer links",
+        "",
+        `- Program: https://explorer.solana.com/address/${QAL_PROGRAM_ID.toBase58()}?cluster=devnet`,
+        `- Anchor tx: https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+        `- Revoke tx: https://explorer.solana.com/tx/${revokeSig}?cluster=devnet`,
+        `- Supersede tx: https://explorer.solana.com/tx/${supersedeSig}?cluster=devnet`,
+        `- Anchor PDA: https://explorer.solana.com/address/${receipt.anchor_address}?cluster=devnet`,
+        "",
+      ].join("\n"),
+    );
+
+    await fs.writeFile(
+      path.join(evidenceDir, "test-output.txt"),
+      [
+        "devnet integration: PASS",
+        `program: ${QAL_PROGRAM_ID.toBase58()}`,
+        `issuer: ${wallet.publicKey.toBase58()}`,
+        `primary_outcome_after_revoke: VALID_REVOKED`,
+        `tamper_outcome: DIGEST_MISMATCH`,
+        `supersede: fully_superseded=true`,
+        `verify_tiers_on_anchor: ${JSON.stringify(ok.tiers)}`,
+        "",
+      ].join("\n"),
     );
   });
 });
