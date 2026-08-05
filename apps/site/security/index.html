@@ -17,40 +17,35 @@
         <a class="active" href="/security/">Security</a>
       </nav>
 
-      <div class="badge">Unaudited pre-alpha</div>
-      <h1>Security & disclaimer</h1>
-      <p class="tagline">
-        Clear limits. No military-grade marketing. No token.
-      </p>
+      <h1>Security</h1>
+      <p class="lede">Limits first. No marketing language.</p>
 
-      <div class="bad-box">
-        <strong>Do not use for production evidence.</strong> No independent
-        security audit. Devnet demonstration incomplete. Not legal notarization.
+      <div class="warn">
+        Unaudited pre-alpha. Do not use for production evidence. Devnet
+        deployment of the program was not completed on public RPC.
       </div>
 
-      <h2>Compromised program ID</h2>
-      <p class="lead">
-        An early commit exposed a program keypair. That identity is abandoned:
+      <h2>Abandoned program ID</h2>
+      <p>
+        An early commit included a full program keypair. That ID is dead:
       </p>
       <pre>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</pre>
-      <p class="lead">Active pre-alpha program ID (keypair not in git):</p>
+      <p>Intended pre-alpha ID (keypair not in the repo):</p>
       <pre>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</pre>
 
-      <h2>QAL does not protect against</h2>
-      <ul class="clean never">
-        <li>Compromised endpoints or keyloggers</li>
-        <li>Weak or exposed QEV phrases</li>
-        <li>Malicious npm dependencies</li>
-        <li>Wallet compromise</li>
-        <li>RPC censorship or downtime</li>
-        <li>False real-world identity claims</li>
-        <li>Recipients copying decrypted plaintext</li>
-        <li>Loss of the only passphrase</li>
-        <li>Bugs in Solana, Anchor, wallets, or QEV</li>
+      <h2>Not covered</h2>
+      <ul>
+        <li>Compromised machines or stolen wallets</li>
+        <li>Weak or leaked QEV passphrases</li>
+        <li>Malicious dependencies</li>
+        <li>RPC lying or going offline</li>
+        <li>Someone claiming a wallet equals a legal identity</li>
+        <li>Copies of plaintext after decrypt</li>
+        <li>Bugs in Solana, wallets, or QEV</li>
       </ul>
 
-      <h2>Repo docs</h2>
-      <ul class="clean">
+      <h2>Repo</h2>
+      <ul>
         <li><code>SECURITY.md</code></li>
         <li><code>DISCLAIMER.md</code></li>
         <li><code>spec/THREAT_MODEL.md</code></li>
@@ -58,7 +53,7 @@
       </ul>
 
       <footer>
-        Report issues privately to maintainers · MIT license
+        Report serious issues privately to maintainers.
       </footer>
     </div>
   </body>

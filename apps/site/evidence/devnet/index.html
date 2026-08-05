@@ -17,69 +17,51 @@
         <a href="/security/">Security</a>
       </nav>
 
-      <div class="badge">Experimental · Unaudited</div>
       <h1>Devnet evidence</h1>
-      <p class="tagline">
-        Public, non-secret artifacts from an experimental Solana devnet
-        deployment of QAL.
+      <p class="lede">
+        Public artifacts from an experimental deployment. Empty until a
+        successful on-chain run is committed.
       </p>
 
-      <div class="bad-box">
-        <strong>Not complete yet.</strong> Program upload to public Devnet was
-        not finalized (RPC rate limits / write retries). No production claim.
-        Do not treat this page as legal or audited proof.
+      <div class="warn">
+        No finalized program account on public Devnet from this project yet.
+        Failed uploads hit RPC rate limits and burned test SOL. Nothing here
+        is production proof.
       </div>
 
-      <h2>Target package</h2>
-      <p class="lead">
-        After a successful
-        <code>./scripts/deploy-devnet.sh</code>, committed files live under
-        <code>evidence/devnet/v0.1.2/</code> in the repo.
-      </p>
-
-      <div class="card">
-        <div class="kv">
-          <span>Program ID</span
-          ><span>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</span>
-          <span>Compromised ID</span
-          ><span style="color: var(--bad)"
-            >AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf (do not use)</span
-          >
-          <span>Deploy authority</span
-          ><span>3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz</span>
-          <span>Cluster</span><span>solana-devnet</span>
-          <span>Genesis</span
-          ><span>EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG</span>
-          <span>On-chain program</span><span>Not found (deploy incomplete)</span>
-          <span>Source</span
-          ><span
-            ><a
-              href="https://github.com/TheArtOfSound/qev-anchor-layer"
-              target="_blank"
-              rel="noopener"
-              >github.com/TheArtOfSound/qev-anchor-layer</a
-            ></span
-          >
-        </div>
-      </div>
-
-      <h2>What will appear here when deploy succeeds</h2>
-      <ul class="clean">
-        <li>Deployment transaction + program show output</li>
-        <li>Anchor receipt + transaction</li>
-        <li>Verification result (match vs endorsement)</li>
-        <li>Revoke + atomic supersede transactions</li>
-        <li>Explorer links + test output</li>
-        <li>Binary SHA-256 + source commit</li>
+      <h2>Intended identifiers</h2>
+      <ul class="plain">
+        <li>
+          <span>Program</span>
+          6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR
+        </li>
+        <li>
+          <span>Deploy key</span>
+          3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz
+        </li>
+        <li>
+          <span>Genesis</span>
+          EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG
+        </li>
+        <li><span>On-chain</span> not found</li>
       </ul>
 
-      <div class="ok-box">
-        Template README in repo:
+      <h2>When a deploy works</h2>
+      <p>
+        The repo path
+        <code>evidence/devnet/v0.1.2/</code>
+        should hold non-secret files only: commit hash, program show JSON,
+        receipts, transaction signatures, explorer links, test log. No
+        keypairs, phrases, or plaintext.
+      </p>
+
+      <p class="note">
+        Template:
         <code>evidence/devnet/v0.1.2/README.md</code>
-      </div>
+      </p>
 
       <footer>
-        <a href="/">← Home</a> · Pre-alpha only · No token
+        <a href="/">Home</a>
       </footer>
     </div>
   </body>
