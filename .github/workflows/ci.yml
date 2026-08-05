@@ -55,19 +55,25 @@ jobs:
         run: |
           set -euo pipefail
           sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.21/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+          SOLANA_BIN="$HOME/.local/share/solana/install/active_release/bin"
+          echo "$SOLANA_BIN" >> "$GITHUB_PATH"
+          export PATH="$SOLANA_BIN:$PATH"
           solana --version
+          solana-keygen --version
 
       - name: Install Anchor 1.0.1
         run: |
           set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
           cargo install --git https://github.com/coral-xyz/anchor --tag v1.0.1 anchor-cli --locked --force
+          export PATH="$HOME/.cargo/bin:$PATH"
           anchor --version
 
       # Coherent ephemeral identity for compile/test only (not production deploy key).
       - name: Prepare ephemeral program identity
         run: |
           set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$PATH"
           mkdir -p target/deploy
           solana-keygen new -o target/deploy/qal_anchor-keypair.json --no-bip39-passphrase -f
           ID=$(solana-keygen pubkey target/deploy/qal_anchor-keypair.json)
@@ -78,10 +84,16 @@ jobs:
           grep qal_anchor Anchor.toml
 
       - name: Anchor build
-        run: anchor build
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$PATH"
+          anchor build
 
       - name: Program LiteSVM tests
-        run: cargo test -p qal-anchor --test test_anchor -- --nocapture
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$PATH"
+          cargo test -p qal-anchor --test test_anchor -- --nocapture
 
       - name: cargo fmt
         run: cargo fmt --all -- --check
