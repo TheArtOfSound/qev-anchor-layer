@@ -27,12 +27,14 @@ jobs:
       - name: Install JS deps (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
+      - name: Build SDK (CLI typecheck imports dist types)
+        run: pnpm --filter @qira/qal-sdk build
+
       - name: Typecheck
         run: pnpm typecheck
 
       - name: Lint
         run: pnpm lint
-
       - name: Unit tests
         run: pnpm test:unit
 
