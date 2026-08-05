@@ -33,8 +33,8 @@ keys/
 
 # Test evidence / local receipts
 receipts/
-# evidence/  # allow public evidence package
-# evidence/
+# Public non-secret package lives in evidence/devnet/ (committed).
+# Do not put keypairs, phrases, or plaintext there.
 *.qev
 !fixtures/**/*.qev
 test-output/
@@ -51,10 +51,3 @@ pnpm-debug.log*
 yarn.lock
 package-lock.json
 apps/verifier/vendor/
-
-# Public non-secret devnet evidence (never put keypairs here)
-!evidence/
-# evidence/  # allow public evidence package
-# evidence/**/*-keypair*
-# evidence/  # allow public evidence package
-# evidence/**/*.pem
