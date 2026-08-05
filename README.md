@@ -1,3 +1,7 @@
+> **Experimental pre-alpha. Devnet/localnet only. Unaudited. Do not use for production evidence.**  
+> Compromised historical program ID: `AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf` — see `docs/COMPROMISED_PROGRAM_ID.md`.  
+> Active program ID: `6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR` (keypair **not** in git).
+
 # QAL — QEV Anchor Layer
 
 **Encrypt locally. Anchor publicly. Verify anywhere.**

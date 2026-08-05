@@ -81,27 +81,46 @@ export async function decryptWithQev(vault: unknown, password: string): Promise<
 /**
  * Run QEV self-test and return version metadata.
  */
-export async function checkQevCompatibility(): Promise<{
+export async function checkQevCompatibility(options?: {
+  /** When true, installed npm version must equal PINNED_QEV_VERSION. Default true for doctor. */
+  requirePinnedVersion?: boolean;
+}): Promise<{
   ok: boolean;
   qevVersion: string;
   pinnedVersion: string;
   schema: string;
+  versionMatch: boolean;
   error?: string;
 }> {
+  const requirePinned = options?.requirePinnedVersion !== false;
+  const qevVersion = installedQevPackageVersion();
+  const versionMatch = qevVersion === PINNED_QEV_VERSION;
   try {
     await runSelfTest();
+    if (requirePinned && !versionMatch) {
+      return {
+        ok: false,
+        qevVersion,
+        pinnedVersion: PINNED_QEV_VERSION,
+        schema: String(SCHEMA_V2),
+        versionMatch,
+        error: `Installed @bryan237l/qev-cli@${qevVersion} != pinned ${PINNED_QEV_VERSION}`,
+      };
+    }
     return {
       ok: true,
-      qevVersion: installedQevPackageVersion(),
+      qevVersion,
       pinnedVersion: PINNED_QEV_VERSION,
       schema: String(SCHEMA_V2),
+      versionMatch,
     };
   } catch (err) {
     return {
       ok: false,
-      qevVersion: installedQevPackageVersion(),
+      qevVersion,
       pinnedVersion: PINNED_QEV_VERSION,
       schema: String(SCHEMA_V2 ?? "unknown"),
+      versionMatch,
       error: err instanceof Error ? err.message : String(err),
     };
   }

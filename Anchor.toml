@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-qal_anchor = "AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf"
+qal_anchor = "6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR"
 
 [programs.devnet]
-qal_anchor = "AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf"
+qal_anchor = "6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR"
 
 [provider]
 cluster = "localnet"

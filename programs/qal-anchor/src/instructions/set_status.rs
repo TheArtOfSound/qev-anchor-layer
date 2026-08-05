@@ -10,6 +10,7 @@ use crate::state::{VaultAnchor, VaultStatus};
 pub struct SetStatus<'info> {
     pub controller: Signer<'info>,
 
+    /// Immutable anchor — never written here.
     #[account(
         seeds = [QAL_SEED, vault_anchor.issuer.as_ref(), vault_anchor.vault_digest.as_ref()],
         bump = vault_anchor.bump,
@@ -25,7 +26,7 @@ pub struct SetStatus<'info> {
             vault_anchor.vault_digest.as_ref()
         ],
         bump = vault_status.bump,
-        constraint = vault_status.anchor == vault_anchor.key() @ QalError::UnauthorizedController,
+        constraint = vault_status.anchor == vault_anchor.key() @ QalError::StatusAnchorMismatch,
         constraint = vault_status.controller == controller.key() @ QalError::UnauthorizedController,
     )]
     pub vault_status: Account<'info, VaultStatus>,
@@ -38,13 +39,6 @@ pub fn handle_set_status(ctx: Context<SetStatus>, new_state: u8) -> Result<()> {
             STATUS_ACTIVE | STATUS_REVOKED | STATUS_SUPERSEDED | STATUS_DISPUTED
         ),
         QalError::InvalidStatus
-    );
-
-    // Defense in depth: controller on immutable anchor must match signer.
-    require_keys_eq!(
-        ctx.accounts.vault_anchor.controller,
-        ctx.accounts.controller.key(),
-        QalError::UnauthorizedController
     );
 
     let clock = Clock::get()?;

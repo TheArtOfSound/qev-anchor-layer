@@ -1,6 +1,8 @@
 /**
- * Revision lineage helpers (parent_digest chain).
- * Full historical indexing requires an indexer; v0.1 walks known digests / receipts.
+ * Revision lineage helpers.
+ *
+ * parent_digest_claim is an UNVERIFIED claim unless FLAG_PARENT_SUPERSEDED_ATOMIC
+ * was set by the supersede_vault instruction. History walks claims only.
  */
 
 import { PublicKey } from "@solana/web3.js";
@@ -16,13 +18,11 @@ export interface HistoryEntry {
   vault_digest: string;
   anchor: VaultAnchorAccount;
   status: VaultStatusAccount | null;
-  parent_digest: string | null;
+  parent_digest_claim: string | null;
+  /** True when flags bit 2 (atomic supersede) is set on the child. */
+  parent_claim_atomic: boolean;
 }
 
-/**
- * Walk parent_digest links starting from a known digest for a given issuer.
- * Stops at zero parent or missing account. Max depth prevents infinite loops.
- */
 export async function walkRevisionHistory(
   issuer: PublicKey,
   startDigestHex: string,
@@ -30,7 +30,6 @@ export async function walkRevisionHistory(
   maxDepth = 32,
 ): Promise<HistoryEntry[]> {
   const connection = createConnection(opts);
-  // touch connection to fail fast
   await connection.getSlot();
 
   const chain: HistoryEntry[] = [];
@@ -38,18 +37,24 @@ export async function walkRevisionHistory(
 
   for (let i = 0; i < maxDepth; i++) {
     const digestBytes = hexToBytes(current);
-    const { anchor, status } = await fetchAnchorForIssuerDigest(issuer, digestBytes, opts);
+    const { anchor, status } = await fetchAnchorForIssuerDigest(
+      issuer,
+      digestBytes,
+      opts,
+    );
     if (!anchor) break;
 
-    const parent = isZeroDigest(hexToBytes(anchor.parent_digest))
+    const parent = isZeroDigest(hexToBytes(anchor.parent_digest_claim))
       ? null
-      : anchor.parent_digest;
+      : anchor.parent_digest_claim;
+    const parent_claim_atomic = (anchor.flags & (1 << 2)) !== 0;
 
     chain.push({
       vault_digest: anchor.vault_digest,
       anchor,
       status,
-      parent_digest: parent,
+      parent_digest_claim: parent,
+      parent_claim_atomic,
     });
 
     if (!parent) break;

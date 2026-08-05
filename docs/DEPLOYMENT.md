@@ -17,7 +17,7 @@ anchor build
 
 Binary: `target/deploy/qal_anchor.so`  
 Keypair: `target/deploy/qal_anchor-keypair.json`  
-Program ID: `AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf`
+Program ID: `6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR`
 
 ## Localnet
 

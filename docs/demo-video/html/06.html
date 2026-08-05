@@ -1,0 +1,14 @@
+<!DOCTYPE html><html><head><link rel="stylesheet" href="slides.css"></head><body>
+<div class="slide">
+  <div class="badge">Step 3 · Anywhere</div>
+  <div class="big-num">03</div>
+  <h2>Verify without trusting Qira</h2>
+  <div class="mono">qal verify evidence.qev --network devnet</div>
+  <div class="row">
+    <div class="card"><div class="n">LOCAL</div><h3>Recompute digest</h3><p>Validate vault → canonicalize → SHA-256</p></div>
+    <div class="card"><div class="n">CHAIN</div><h3>Read Solana record</h3><p>Fetch PDA for issuer + digest</p></div>
+    <div class="card"><div class="n">RESULT</div><h3>Compare + report</h3><p>Match and endorsement stay separate</p></div>
+  </div>
+  <div class="ok">VALID_REVOKED still means cryptographic_match: true — history is not erased.</div>
+  <div class="footer"><span>QAL how-it-works</span><span>06 / 08</span></div>
+</div></body></html>

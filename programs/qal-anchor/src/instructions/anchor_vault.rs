@@ -1,25 +1,18 @@
 use anchor_lang::prelude::*;
 
 use crate::constants::{
-    ANCHOR_VERSION, FLAG_HAS_CONTENT_REF, FLAG_HAS_PARENT, PROTOCOL_SEED, QAL_SEED, STATUS_ACTIVE,
-    STATUS_SEED,
+    ALLOWED_CLIENT_FLAGS, ANCHOR_VERSION, FLAG_HAS_CONTENT_REF, FLAG_HAS_PARENT_CLAIM, QAL_SEED,
+    STATUS_ACTIVE, STATUS_SEED,
 };
 use crate::error::QalError;
-use crate::state::{ProtocolConfig, VaultAnchor, VaultStatus};
+use crate::state::{VaultAnchor, VaultStatus};
 
 #[derive(Accounts)]
 #[instruction(vault_digest: [u8; 32])]
 pub struct AnchorVault<'info> {
-    /// Issuer must sign. Becomes permanent issuer and initial controller.
+    /// Issuer must sign. Becomes permanent issuer and initial controller on status.
     #[account(mut)]
     pub issuer: Signer<'info>,
-
-    #[account(
-        mut,
-        seeds = [QAL_SEED, PROTOCOL_SEED],
-        bump = protocol.bump
-    )]
-    pub protocol: Account<'info, ProtocolConfig>,
 
     /// Immutable anchor PDA: seeds = ["qal", issuer, vault_digest]
     #[account(
@@ -49,34 +42,37 @@ pub fn handle_anchor_vault(
     vault_digest: [u8; 32],
     qev_schema_hash: [u8; 32],
     content_ref_hash: [u8; 32],
-    parent_digest: [u8; 32],
+    parent_digest_claim: [u8; 32],
     flags: u16,
 ) -> Result<()> {
     require!(vault_digest != [0u8; 32], QalError::ZeroVaultDigest);
     require!(qev_schema_hash != [0u8; 32], QalError::ZeroSchemaHash);
+    // Reject unknown bits; do not preserve client-supplied reserved flags.
+    require!(
+        flags & !ALLOWED_CLIENT_FLAGS == 0,
+        QalError::UnknownFlags
+    );
 
     let clock = Clock::get()?;
     let issuer_key = ctx.accounts.issuer.key();
 
-    // Normalize flags to match provided digests (never trust client alone).
-    let mut normalized_flags = flags
-        & !(FLAG_HAS_CONTENT_REF | FLAG_HAS_PARENT);
+    let mut normalized_flags: u16 = 0;
     if content_ref_hash != [0u8; 32] {
         normalized_flags |= FLAG_HAS_CONTENT_REF;
     }
-    if parent_digest != [0u8; 32] {
-        normalized_flags |= FLAG_HAS_PARENT;
+    if parent_digest_claim != [0u8; 32] {
+        // Unverified parent claim unless supersede path set the atomic flag.
+        normalized_flags |= FLAG_HAS_PARENT_CLAIM;
     }
 
     let anchor = &mut ctx.accounts.vault_anchor;
     anchor.version = ANCHOR_VERSION;
     anchor.bump = ctx.bumps.vault_anchor;
     anchor.issuer = issuer_key;
-    anchor.controller = issuer_key;
     anchor.vault_digest = vault_digest;
     anchor.qev_schema_hash = qev_schema_hash;
     anchor.content_ref_hash = content_ref_hash;
-    anchor.parent_digest = parent_digest;
+    anchor.parent_digest_claim = parent_digest_claim;
     anchor.created_slot = clock.slot;
     anchor.flags = normalized_flags;
 
@@ -87,12 +83,6 @@ pub fn handle_anchor_vault(
     status.updated_slot = clock.slot;
     status.bump = ctx.bumps.vault_status;
 
-    let protocol = &mut ctx.accounts.protocol;
-    protocol.anchors_created = protocol
-        .anchors_created
-        .checked_add(1)
-        .unwrap_or(protocol.anchors_created);
-
     emit!(VaultAnchored {
         anchor: anchor.key(),
         status: status.key(),
@@ -100,7 +90,7 @@ pub fn handle_anchor_vault(
         vault_digest,
         qev_schema_hash,
         content_ref_hash,
-        parent_digest,
+        parent_digest_claim,
         created_slot: clock.slot,
         flags: normalized_flags,
     });
@@ -116,7 +106,7 @@ pub struct VaultAnchored {
     pub vault_digest: [u8; 32],
     pub qev_schema_hash: [u8; 32],
     pub content_ref_hash: [u8; 32],
-    pub parent_digest: [u8; 32],
+    pub parent_digest_claim: [u8; 32],
     pub created_slot: u64,
     pub flags: u16,
 }

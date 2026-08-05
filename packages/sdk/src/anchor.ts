@@ -1,6 +1,7 @@
 /**
  * Anchor a QEV vault digest to Solana.
  * Never sends plaintext, passwords, or keys on-chain.
+ * No auto protocol-init race. No global writable counter.
  */
 
 import {
@@ -18,18 +19,17 @@ import {
   bytesToHex,
 } from "./digest.js";
 import {
-  QAL_PROGRAM_ID,
   buildAnchorVaultIx,
-  buildInitializeProtocolIx,
   buildSetStatusIx,
-  defaultRpcUrl,
-  deriveAnchorPda,
-  deriveProtocolPda,
-  deriveStatusPda,
+  buildSupersedeVaultIx,
   programExists,
+  assertNetwork,
+  deriveAnchorPda,
+  deriveStatusPda,
 } from "./program.js";
 import { decodeVaultAnchor, decodeVaultStatus } from "./decode.js";
 import { buildReceipt } from "./receipt.js";
+import { getNetworkConfig, programIdForNetwork } from "./network.js";
 import type {
   AnchorVaultParams,
   QalReceipt,
@@ -47,35 +47,20 @@ export interface AnchorClientOptions {
 
 export function createConnection(opts: AnchorClientOptions): Connection {
   if (opts.connection) return opts.connection;
-  return new Connection(opts.rpcUrl ?? defaultRpcUrl(opts.network), "confirmed");
+  return new Connection(
+    opts.rpcUrl ?? getNetworkConfig(opts.network).defaultRpcUrl,
+    "confirmed",
+  );
 }
 
-export async function ensureProtocolInitialized(
-  connection: Connection,
-  payer: Keypair,
-  programId: PublicKey = QAL_PROGRAM_ID,
-): Promise<string | null> {
-  const [protocol] = deriveProtocolPda(programId);
-  const info = await connection.getAccountInfo(protocol);
-  if (info) return null;
-
-  const ix = buildInitializeProtocolIx(payer.publicKey, programId);
-  const tx = new Transaction().add(ix);
-  const sig = await sendAndConfirmTransaction(connection, tx, [payer], {
-    commitment: "confirmed",
-  });
-  return sig;
-}
-
-/**
- * Public metadata that will be submitted on-chain (for CLI preflight display).
- */
-export function describeAnchorPayload(params: AnchorVaultParams & { issuer: string }): {
+export function describeAnchorPayload(
+  params: AnchorVaultParams & { issuer: string },
+): {
   vault_digest: string;
   qev_schema: string;
   qev_schema_hash: string;
   content_ref_hash: string;
-  parent_digest: string | null;
+  parent_digest_claim: string | null;
   flags: number;
   issuer: string;
   note: string;
@@ -83,8 +68,8 @@ export function describeAnchorPayload(params: AnchorVaultParams & { issuer: stri
   const d = computeVaultDigest(params.vault);
   const refHash = contentRefHash(params.contentReference ?? null);
   const parent =
-    params.parentDigest && params.parentDigest !== "0".repeat(64)
-      ? hexToBytes(params.parentDigest)
+    params.parentDigestClaim && params.parentDigestClaim !== "0".repeat(64)
+      ? hexToBytes(params.parentDigestClaim)
       : new Uint8Array(32);
 
   let flags = params.flags ?? 0;
@@ -96,11 +81,11 @@ export function describeAnchorPayload(params: AnchorVaultParams & { issuer: stri
     qev_schema: d.schema,
     qev_schema_hash: d.schemaHashHex,
     content_ref_hash: bytesToHex(refHash),
-    parent_digest: isZeroDigest(parent) ? null : bytesToHex(parent),
+    parent_digest_claim: isZeroDigest(parent) ? null : bytesToHex(parent),
     flags,
     issuer: params.issuer,
     note:
-      "On-chain payload is digests and pubkeys only. No plaintext, password, or keys are transmitted.",
+      "On-chain payload is digests and pubkeys only. parent_digest_claim is an unverified claim unless set via atomic supersede_vault.",
   };
 }
 
@@ -110,31 +95,35 @@ export async function anchorVault(
   opts: AnchorClientOptions,
 ): Promise<{ receipt: QalReceipt; signature: string; anchor: VaultAnchorAccount }> {
   const connection = createConnection(opts);
-  const programId = opts.programId ?? QAL_PROGRAM_ID;
+  const programId = opts.programId ?? new PublicKey(programIdForNetwork(opts.network));
+
+  const genesis = await assertNetwork(connection, opts.network);
 
   const exists = await programExists(connection, programId);
   if (!exists) {
     throw new Error(
-      `QAL program ${programId.toBase58()} not found on ${opts.network}. Deploy with anchor deploy first.`,
+      `QAL program ${programId.toBase58()} not found on ${opts.network}. Deploy first (keypair is NOT in git).`,
     );
   }
 
-  await ensureProtocolInitialized(connection, signer, programId);
-
   const d = computeVaultDigest(params.vault);
   const refHash = contentRefHash(params.contentReference ?? null);
-  const parent = params.parentDigest
-    ? hexToBytes(params.parentDigest)
+  const parent = params.parentDigestClaim
+    ? hexToBytes(params.parentDigestClaim)
     : new Uint8Array(32);
 
   let flags = params.flags ?? 0;
+  // Only allowed client bits 0..1
+  flags &= 0b11;
   if (!isZeroDigest(refHash)) flags |= 1;
   if (!isZeroDigest(parent)) flags |= 2;
 
   const [anchorPda] = deriveAnchorPda(signer.publicKey, d.digestBytes, programId);
   const existing = await connection.getAccountInfo(anchorPda);
   if (existing) {
-    throw new Error(`Duplicate anchor: PDA ${anchorPda.toBase58()} already exists for this issuer+digest`);
+    throw new Error(
+      `Duplicate anchor: PDA ${anchorPda.toBase58()} already exists for this issuer+digest`,
+    );
   }
 
   const ix = buildAnchorVaultIx({
@@ -142,7 +131,7 @@ export async function anchorVault(
     vaultDigest: d.digestBytes,
     qevSchemaHash: d.schemaHash,
     contentRefHash: refHash,
-    parentDigest: parent,
+    parentDigestClaim: parent,
     flags,
     programId,
   });
@@ -152,10 +141,12 @@ export async function anchorVault(
     commitment: "confirmed",
   });
 
-  // Post-write verification: re-read account and confirm digest.
   const anchorInfo = await connection.getAccountInfo(anchorPda, "confirmed");
   if (!anchorInfo) {
-    throw new Error("Post-write verification failed: anchor account missing after confirmation");
+    throw new Error("Post-write verification failed: anchor account missing");
+  }
+  if (!anchorInfo.owner.equals(programId)) {
+    throw new Error("Post-write verification failed: wrong account owner");
   }
   const anchor = decodeVaultAnchor(Buffer.from(anchorInfo.data), anchorPda.toBase58());
   if (anchor.vault_digest !== d.digest) {
@@ -163,23 +154,27 @@ export async function anchorVault(
       `Post-write digest mismatch: on-chain=${anchor.vault_digest} local=${d.digest}`,
     );
   }
-  if (anchor.issuer !== signer.publicKey.toBase58()) {
-    throw new Error("Post-write issuer mismatch");
-  }
 
   const [statusPda] = deriveStatusPda(signer.publicKey, d.digestBytes, programId);
+  const statusInfo = await connection.getAccountInfo(statusPda, "confirmed");
+  if (!statusInfo) {
+    throw new Error("Post-write verification failed: status account missing");
+  }
+  const status = decodeVaultStatus(Buffer.from(statusInfo.data), statusPda.toBase58());
 
   const receipt = buildReceipt({
     network: opts.network,
+    genesis_hash: genesis,
     program_id: programId.toBase58(),
     anchor_address: anchorPda.toBase58(),
     status_address: statusPda.toBase58(),
     issuer: signer.publicKey.toBase58(),
-    controller: anchor.controller,
+    controller: status.controller,
     vault_digest: d.digest,
     qev_schema: d.schema,
+    qev_schema_hash: d.schemaHashHex,
     content_reference: params.contentReference ?? null,
-    parent_digest: isZeroDigest(parent) ? null : bytesToHex(parent),
+    parent_digest_claim: isZeroDigest(parent) ? null : bytesToHex(parent),
     transaction_signature: signature,
     created_slot: anchor.created_slot,
   });
@@ -197,7 +192,8 @@ export async function setStatus(
   opts: AnchorClientOptions,
 ): Promise<string> {
   const connection = createConnection(opts);
-  const programId = opts.programId ?? QAL_PROGRAM_ID;
+  const programId = opts.programId ?? new PublicKey(programIdForNetwork(opts.network));
+  await assertNetwork(connection, opts.network);
 
   if (![0, 1, 2, 3].includes(params.newState)) {
     throw new Error(`Invalid status code: ${params.newState}`);
@@ -230,23 +226,141 @@ export async function revokeAnchor(
   );
 }
 
+/**
+ * Atomic supersede: one instruction creates new anchor and marks old superseded.
+ */
+export async function supersedeVault(
+  params: {
+    oldVault: unknown;
+    newVault: unknown;
+    /** Original issuer of the old vault (required; may differ from controller). */
+    issuer: PublicKey;
+    contentReference?: string | null;
+  },
+  controller: Keypair,
+  opts: AnchorClientOptions,
+): Promise<{
+  receipt: QalReceipt;
+  signature: string;
+  oldDigest: string;
+  newDigest: string;
+  fullySuperseded: true;
+}> {
+  const connection = createConnection(opts);
+  const programId = opts.programId ?? new PublicKey(programIdForNetwork(opts.network));
+  const genesis = await assertNetwork(connection, opts.network);
+
+  const oldD = computeVaultDigest(params.oldVault);
+  const newD = computeVaultDigest(params.newVault);
+  const refHash = contentRefHash(params.contentReference ?? null);
+  let flags = 0;
+  if (!isZeroDigest(refHash)) flags |= 1;
+
+  const issuer = params.issuer;
+  const [oldAnchorPda] = deriveAnchorPda(issuer, oldD.digestBytes, programId);
+  const oldInfo = await connection.getAccountInfo(oldAnchorPda);
+  if (!oldInfo) {
+    throw new Error(`Old anchor not found at ${oldAnchorPda.toBase58()}`);
+  }
+  if (!oldInfo.owner.equals(programId)) {
+    throw new Error("Old anchor OWNER_MISMATCH");
+  }
+  const oldDecoded = decodeVaultAnchor(Buffer.from(oldInfo.data), oldAnchorPda.toBase58());
+  if (oldDecoded.issuer !== issuer.toBase58()) {
+    throw new Error("Issuer mismatch on old anchor");
+  }
+
+  const ix = buildSupersedeVaultIx({
+    controller: controller.publicKey,
+    issuer,
+    oldVaultDigest: oldD.digestBytes,
+    newVaultDigest: newD.digestBytes,
+    newQevSchemaHash: newD.schemaHash,
+    newContentRefHash: refHash,
+    newFlags: flags,
+    programId,
+  });
+
+  const tx = new Transaction().add(ix);
+  const signature = await sendAndConfirmTransaction(connection, tx, [controller], {
+    commitment: "confirmed",
+  });
+
+  const [newAnchorPda] = deriveAnchorPda(issuer, newD.digestBytes, programId);
+  const [newStatusPda] = deriveStatusPda(issuer, newD.digestBytes, programId);
+  const [oldStatusPda] = deriveStatusPda(issuer, oldD.digestBytes, programId);
+
+  const newInfo = await connection.getAccountInfo(newAnchorPda, "confirmed");
+  if (!newInfo) throw new Error("Post-supersede: new anchor missing");
+  const newAnchor = decodeVaultAnchor(Buffer.from(newInfo.data), newAnchorPda.toBase58());
+
+  const oldStatusInfo = await connection.getAccountInfo(oldStatusPda, "confirmed");
+  if (!oldStatusInfo) throw new Error("Post-supersede: old status missing");
+  const oldStatus = decodeVaultStatus(
+    Buffer.from(oldStatusInfo.data),
+    oldStatusPda.toBase58(),
+  );
+  if (oldStatus.state !== "superseded") {
+    throw new Error(
+      `Post-supersede: old status is ${oldStatus.state}, expected superseded — atomic path failed`,
+    );
+  }
+
+  const statusInfo = await connection.getAccountInfo(newStatusPda, "confirmed");
+  if (!statusInfo) throw new Error("Post-supersede: new status missing");
+  const newStatus = decodeVaultStatus(
+    Buffer.from(statusInfo.data),
+    newStatusPda.toBase58(),
+  );
+
+  const receipt = buildReceipt({
+    network: opts.network,
+    genesis_hash: genesis,
+    program_id: programId.toBase58(),
+    anchor_address: newAnchorPda.toBase58(),
+    status_address: newStatusPda.toBase58(),
+    issuer: issuer.toBase58(),
+    controller: newStatus.controller,
+    vault_digest: newD.digest,
+    qev_schema: newD.schema,
+    qev_schema_hash: newD.schemaHashHex,
+    content_reference: params.contentReference ?? null,
+    parent_digest_claim: oldD.digest,
+    transaction_signature: signature,
+    created_slot: newAnchor.created_slot,
+  });
+
+  return {
+    receipt,
+    signature,
+    oldDigest: oldD.digest,
+    newDigest: newD.digest,
+    fullySuperseded: true,
+  };
+}
+
 export async function fetchAnchorByAddress(
   address: string,
   opts: AnchorClientOptions,
 ): Promise<VaultAnchorAccount | null> {
   const connection = createConnection(opts);
+  const programId = opts.programId ?? new PublicKey(programIdForNetwork(opts.network));
   const info = await connection.getAccountInfo(new PublicKey(address), "confirmed");
   if (!info) return null;
+  if (!info.owner.equals(programId)) {
+    throw new Error(`OWNER_MISMATCH: account not owned by QAL program`);
+  }
   return decodeVaultAnchor(Buffer.from(info.data), address);
 }
 
-export async function fetchStatusByAddress(
-  address: string,
-  opts: AnchorClientOptions,
-) {
+export async function fetchStatusByAddress(address: string, opts: AnchorClientOptions) {
   const connection = createConnection(opts);
+  const programId = opts.programId ?? new PublicKey(programIdForNetwork(opts.network));
   const info = await connection.getAccountInfo(new PublicKey(address), "confirmed");
   if (!info) return null;
+  if (!info.owner.equals(programId)) {
+    throw new Error(`OWNER_MISMATCH: status account not owned by QAL program`);
+  }
   return decodeVaultStatus(Buffer.from(info.data), address);
 }
 
@@ -260,7 +374,7 @@ export async function fetchAnchorForIssuerDigest(
   anchorAddress: string;
   statusAddress: string;
 }> {
-  const programId = opts.programId ?? QAL_PROGRAM_ID;
+  const programId = opts.programId ?? new PublicKey(programIdForNetwork(opts.network));
   const connection = createConnection(opts);
   const [anchorPda] = deriveAnchorPda(issuer, vaultDigest, programId);
   const [statusPda] = deriveStatusPda(issuer, vaultDigest, programId);
@@ -270,9 +384,20 @@ export async function fetchAnchorForIssuerDigest(
     connection.getAccountInfo(statusPda, "confirmed"),
   ]);
 
+  if (aInfo && !aInfo.owner.equals(programId)) {
+    throw new Error("OWNER_MISMATCH on anchor PDA");
+  }
+  if (sInfo && !sInfo.owner.equals(programId)) {
+    throw new Error("OWNER_MISMATCH on status PDA");
+  }
+
   return {
-    anchor: aInfo ? decodeVaultAnchor(Buffer.from(aInfo.data), anchorPda.toBase58()) : null,
-    status: sInfo ? decodeVaultStatus(Buffer.from(sInfo.data), statusPda.toBase58()) : null,
+    anchor: aInfo
+      ? decodeVaultAnchor(Buffer.from(aInfo.data), anchorPda.toBase58())
+      : null,
+    status: sInfo
+      ? decodeVaultStatus(Buffer.from(sInfo.data), statusPda.toBase58())
+      : null,
     anchorAddress: anchorPda.toBase58(),
     statusAddress: statusPda.toBase58(),
   };

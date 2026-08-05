@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.devnet.solana.com http://127.0.0.1:8899 ws://127.0.0.1:8900; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>QAL Verifier — Encrypt locally. Anchor publicly. Verify anywhere.</title>
     <style>
@@ -108,6 +109,7 @@
   <body>
     <main>
       <h1>QAL Verifier</h1>
+      <p class="tagline" style="color:#f5a524;font-weight:600">PRE-ALPHA · UNAUDITED · DEVNET ONLY</p>
       <p class="tagline">Encrypt locally. Anchor publicly. Verify anywhere.<br />
         Vault hashing runs in your browser. The vault is <strong>not</strong> uploaded to a server.</p>
 
@@ -131,14 +133,19 @@
             <select id="network">
               <option value="devnet" selected>solana-devnet</option>
               <option value="localnet">solana-localnet</option>
-              <option value="mainnet-beta">solana-mainnet-beta</option>
-            </select>
+                          </select>
           </div>
         </div>
         <div class="row">
           <div>
             <label for="rpc">RPC URL (optional override)</label>
             <input id="rpc" type="text" placeholder="https://api.devnet.solana.com" spellcheck="false" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:0.75rem">
+          <div>
+            <label for="receiptFile">QAL receipt (recommended for DIGEST_MISMATCH)</label>
+            <input id="receiptFile" type="file" accept=".json,application/json" />
           </div>
         </div>
         <button id="verifyBtn" disabled>Verify locally</button>

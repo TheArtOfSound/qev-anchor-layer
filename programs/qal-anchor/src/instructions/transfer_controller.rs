@@ -8,11 +8,10 @@ use crate::state::{VaultAnchor, VaultStatus};
 pub struct TransferController<'info> {
     pub controller: Signer<'info>,
 
+    /// Read-only immutable anchor for seed verification.
     #[account(
-        mut,
         seeds = [QAL_SEED, vault_anchor.issuer.as_ref(), vault_anchor.vault_digest.as_ref()],
         bump = vault_anchor.bump,
-        constraint = vault_anchor.controller == controller.key() @ QalError::UnauthorizedController,
     )]
     pub vault_anchor: Account<'info, VaultAnchor>,
 
@@ -25,22 +24,23 @@ pub struct TransferController<'info> {
             vault_anchor.vault_digest.as_ref()
         ],
         bump = vault_status.bump,
-        constraint = vault_status.anchor == vault_anchor.key() @ QalError::UnauthorizedController,
+        constraint = vault_status.anchor == vault_anchor.key() @ QalError::StatusAnchorMismatch,
         constraint = vault_status.controller == controller.key() @ QalError::UnauthorizedController,
     )]
     pub vault_status: Account<'info, VaultStatus>,
 }
 
-pub fn handle_transfer_controller(ctx: Context<TransferController>, new_controller: Pubkey) -> Result<()> {
+pub fn handle_transfer_controller(
+    ctx: Context<TransferController>,
+    new_controller: Pubkey,
+) -> Result<()> {
     require!(new_controller != Pubkey::default(), QalError::ZeroController);
 
-    let previous = ctx.accounts.vault_anchor.controller;
-
-    // Issuer is NEVER changed.
-    ctx.accounts.vault_anchor.controller = new_controller;
-    ctx.accounts.vault_status.controller = new_controller;
-
+    let previous = ctx.accounts.vault_status.controller;
     let clock = Clock::get()?;
+
+    // Issuer on VaultAnchor is NEVER changed; controller only on VaultStatus.
+    ctx.accounts.vault_status.controller = new_controller;
     ctx.accounts.vault_status.updated_slot = clock.slot;
 
     emit!(ControllerTransferred {

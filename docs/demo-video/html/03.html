@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><head><link rel="stylesheet" href="slides.css"></head><body>
+<div class="slide">
+  <div class="badge">The pipeline</div>
+  <h2>From file to public proof</h2>
+  <div class="flow">
+    <div class="pill">File / record</div><div class="arrow">→</div>
+    <div class="pill">QEV encrypt</div><div class="arrow">→</div>
+    <div class="pill">Canonical JSON</div><div class="arrow">→</div>
+    <div class="pill">SHA-256 digest</div><div class="arrow">→</div>
+    <div class="pill">Solana anchor</div><div class="arrow">→</div>
+    <div class="pill">Receipt</div>
+  </div>
+  <div class="mono">digest = SHA-256( UTF-8( canonicalJSON( vault ) ) )</div>
+  <p class="sub" style="margin-top:28px">Pretty vs compact JSON → same digest. Change one ciphertext byte → different digest.</p>
+  <div class="footer"><span>QAL how-it-works</span><span>03 / 08</span></div>
+</div></body></html>

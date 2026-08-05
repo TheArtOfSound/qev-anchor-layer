@@ -4,8 +4,14 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { encryptVaultV2 } from "@bryan237l/qev-cli";
-import { computeVaultDigest } from "../../packages/sdk/src/index.js";
-import { serializeReceipt, parseReceipt, buildReceipt } from "../../packages/sdk/src/receipt.js";
+import {
+  computeVaultDigest,
+  buildReceipt,
+  serializeReceipt,
+  parseReceipt,
+  QAL_PROGRAM_ID,
+} from "../../packages/sdk/src/index.js";
+import { Keypair } from "@solana/web3.js";
 
 describe("tamper detection", () => {
   it("one-byte ciphertext change alters digest", async () => {
@@ -21,14 +27,11 @@ describe("tamper detection", () => {
     };
 
     const original = computeVaultDigest(vault).digest;
-
     const ct = vault.content.ciphertext;
-    // Flip one character in base64url ciphertext safely
     const chars = ct.split("");
     const idx = Math.max(0, chars.length - 3);
     chars[idx] = chars[idx] === "A" ? "B" : "A";
     vault.content = { ...vault.content, ciphertext: chars.join("") };
-
     const mutated = computeVaultDigest(vault).digest;
     assert.notEqual(original, mutated);
   });
@@ -50,24 +53,26 @@ describe("tamper detection", () => {
 });
 
 describe("receipt serialization", () => {
-  it("round-trips", () => {
+  it("round-trips with genesis_hash", () => {
+    const issuer = Keypair.generate().publicKey.toBase58();
     const r = buildReceipt({
       network: "solana-devnet",
-      program_id: "AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf",
-      anchor_address: "Anchor1111111111111111111111111111111111111",
-      status_address: "Status1111111111111111111111111111111111111",
-      issuer: "Issuer1111111111111111111111111111111111111",
-      controller: "Issuer1111111111111111111111111111111111111",
+      genesis_hash: "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+      program_id: QAL_PROGRAM_ID.toBase58(),
+      anchor_address: Keypair.generate().publicKey.toBase58(),
+      status_address: Keypair.generate().publicKey.toBase58(),
+      issuer,
+      controller: issuer,
       vault_digest: "ab".repeat(32),
       qev_schema: "BRY-NFET-SX-VAULT-V2",
+      qev_schema_hash: "cd".repeat(32),
       content_reference: null,
-      parent_digest: null,
+      parent_digest_claim: null,
       transaction_signature: "sig",
       created_slot: 42,
     });
     const again = parseReceipt(serializeReceipt(r));
     assert.equal(again.vault_digest, r.vault_digest);
-    assert.equal(again.protocol, "QAL");
-    assert.equal(again.protocol_version, "0.1.0");
+    assert.equal(again.genesis_hash, r.genesis_hash);
   });
 });

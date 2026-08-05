@@ -1,10 +1,8 @@
-//! LiteSVM tests for qal-anchor.
+//! LiteSVM tests for qal-anchor v2 (immutable anchor, no global counter, atomic supersede).
 //! Requires `anchor build` so `target/deploy/qal_anchor.so` exists.
 
 use {
-    anchor_lang::{
-        prelude::Pubkey as AnchorPubkey, InstructionData, ToAccountMetas,
-    },
+    anchor_lang::{prelude::Pubkey as AnchorPubkey, InstructionData},
     litesvm::LiteSVM,
     solana_instruction::{AccountMeta, Instruction},
     solana_keypair::Keypair,
@@ -26,8 +24,15 @@ fn send(svm: &mut LiteSVM, payer: &Keypair, ix: Instruction) {
     assert!(res.is_ok(), "tx failed: {:?}", res.err());
 }
 
+fn send_err(svm: &mut LiteSVM, payer: &Keypair, ix: Instruction) {
+    let blockhash = svm.latest_blockhash();
+    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
+    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[payer]).unwrap();
+    assert!(svm.send_transaction(tx).is_err());
+}
+
 #[test]
-fn initialize_protocol_anchor_and_status_transitions() {
+fn anchor_status_transfer_supersede() {
     let program_id_anchor = qal_anchor::id();
     let program_id = pk(program_id_anchor);
     let payer = Keypair::new();
@@ -36,30 +41,12 @@ fn initialize_protocol_anchor_and_status_transitions() {
     svm.add_program(program_id, bytes).unwrap();
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
 
-    let (protocol, _) =
-        AnchorPubkey::find_program_address(&[b"qal", b"protocol"], &program_id_anchor);
-
-    // initialize_protocol
-    let init_data = qal_anchor::instruction::InitializeProtocol {}.data();
-    let init_ix = Instruction {
-        program_id,
-        accounts: vec![
-            AccountMeta::new(payer.pubkey(), true),
-            AccountMeta::new(pk(protocol), false),
-            AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
-        ],
-        data: init_data,
-    };
-    send(&mut svm, &payer, init_ix);
-
-    // anchor_vault
     let mut vault_digest = [0u8; 32];
     vault_digest[0] = 0xab;
     let mut schema_hash = [0u8; 32];
     schema_hash[0] = 0xcd;
     let content_ref = [0u8; 32];
     let parent = [0u8; 32];
-    let flags: u16 = 0;
 
     let issuer_anchor = AnchorPubkey::new_from_array(payer.pubkey().to_bytes());
     let (anchor_pda, _) = AnchorPubkey::find_program_address(
@@ -76,130 +63,198 @@ fn initialize_protocol_anchor_and_status_transitions() {
         &program_id_anchor,
     );
 
-    let anchor_data = qal_anchor::instruction::AnchorVault {
+    // unknown flags rejected
+    let bad_flags = qal_anchor::instruction::AnchorVault {
         vault_digest,
         qev_schema_hash: schema_hash,
         content_ref_hash: content_ref,
-        parent_digest: parent,
-        flags,
+        parent_digest_claim: parent,
+        flags: 1 << 7,
     }
     .data();
+    send_err(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new(payer.pubkey(), true),
+                AccountMeta::new(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
+            ],
+            data: bad_flags,
+        },
+    );
 
-    let anchor_ix = Instruction {
-        program_id,
-        accounts: vec![
-            AccountMeta::new(payer.pubkey(), true),
-            AccountMeta::new(pk(protocol), false),
-            AccountMeta::new(pk(anchor_pda), false),
-            AccountMeta::new(pk(status_pda), false),
-            AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
-        ],
-        data: anchor_data,
-    };
-    send(&mut svm, &payer, anchor_ix);
-
-    // reject zero digest
+    // zero digest rejected
     let zero = [0u8; 32];
-    let (z_anchor, _) = AnchorPubkey::find_program_address(
+    let (z_a, _) = AnchorPubkey::find_program_address(
         &[b"qal", issuer_anchor.as_ref(), zero.as_ref()],
         &program_id_anchor,
     );
-    let (z_status, _) = AnchorPubkey::find_program_address(
+    let (z_s, _) = AnchorPubkey::find_program_address(
         &[b"qal", b"status", issuer_anchor.as_ref(), zero.as_ref()],
         &program_id_anchor,
     );
-    let zero_data = qal_anchor::instruction::AnchorVault {
-        vault_digest: zero,
-        qev_schema_hash: schema_hash,
-        content_ref_hash: content_ref,
-        parent_digest: parent,
-        flags: 0,
-    }
-    .data();
-    let zero_ix = Instruction {
-        program_id,
-        accounts: vec![
-            AccountMeta::new(payer.pubkey(), true),
-            AccountMeta::new(pk(protocol), false),
-            AccountMeta::new(pk(z_anchor), false),
-            AccountMeta::new(pk(z_status), false),
-            AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
-        ],
-        data: zero_data,
-    };
-    let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[zero_ix], Some(&payer.pubkey()), &blockhash);
-    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[&payer]).unwrap();
-    assert!(svm.send_transaction(tx).is_err(), "zero digest must fail");
+    send_err(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new(payer.pubkey(), true),
+                AccountMeta::new(pk(z_a), false),
+                AccountMeta::new(pk(z_s), false),
+                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
+            ],
+            data: qal_anchor::instruction::AnchorVault {
+                vault_digest: zero,
+                qev_schema_hash: schema_hash,
+                content_ref_hash: content_ref,
+                parent_digest_claim: parent,
+                flags: 0,
+            }
+            .data(),
+        },
+    );
 
-    // set_status → revoked
-    let status_data = qal_anchor::instruction::SetStatus { new_state: 1 }.data();
-    let status_ix = Instruction {
-        program_id,
-        accounts: vec![
-            AccountMeta::new_readonly(payer.pubkey(), true),
-            AccountMeta::new_readonly(pk(anchor_pda), false),
-            AccountMeta::new(pk(status_pda), false),
-        ],
-        data: status_data,
-    };
-    send(&mut svm, &payer, status_ix);
+    // happy path anchor
+    send(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new(payer.pubkey(), true),
+                AccountMeta::new(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
+            ],
+            data: qal_anchor::instruction::AnchorVault {
+                vault_digest,
+                qev_schema_hash: schema_hash,
+                content_ref_hash: content_ref,
+                parent_digest_claim: parent,
+                flags: 0,
+            }
+            .data(),
+        },
+    );
 
-    // unauthorized controller transfer attempt
+    // anchor layout: disc(8) + version(1) + bump(1) + issuer(32) — no controller
+    let anchor_acct = svm.get_account(&pk(anchor_pda)).expect("anchor");
+    assert_eq!(anchor_acct.data[8], 2, "version must be 2");
+    let issuer_bytes = &anchor_acct.data[10..42];
+    assert_eq!(issuer_bytes, payer.pubkey().as_ref());
+
+    // unauthorized set_status
     let stranger = Keypair::new();
     svm.airdrop(&stranger.pubkey(), 1_000_000_000).unwrap();
+    send_err(
+        &mut svm,
+        &stranger,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new_readonly(stranger.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+            ],
+            data: qal_anchor::instruction::SetStatus { new_state: 1 }.data(),
+        },
+    );
+
+    // authorized revoke
+    send(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new_readonly(payer.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+            ],
+            data: qal_anchor::instruction::SetStatus { new_state: 1 }.data(),
+        },
+    );
+
+    // transfer controller (status only)
     let new_controller = stranger.pubkey();
-    let xfer_data = qal_anchor::instruction::TransferController {
-        new_controller: AnchorPubkey::new_from_array(new_controller.to_bytes()),
-    }
-    .data();
-    let bad_xfer = Instruction {
-        program_id,
-        accounts: vec![
-            AccountMeta::new_readonly(stranger.pubkey(), true),
-            AccountMeta::new(pk(anchor_pda), false),
-            AccountMeta::new(pk(status_pda), false),
-        ],
-        data: xfer_data,
-    };
-    let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[bad_xfer], Some(&stranger.pubkey()), &blockhash);
-    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[&stranger]).unwrap();
-    assert!(
-        svm.send_transaction(tx).is_err(),
-        "stranger must not transfer controller"
+    send(
+        &mut svm,
+        &payer,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new_readonly(payer.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+            ],
+            data: qal_anchor::instruction::TransferController {
+                new_controller: AnchorPubkey::new_from_array(new_controller.to_bytes()),
+            }
+            .data(),
+        },
     );
 
-    // authorized transfer — issuer preserved on account data (checked by success + re-read length)
-    let xfer_ok_data = qal_anchor::instruction::TransferController {
-        new_controller: AnchorPubkey::new_from_array(new_controller.to_bytes()),
-    }
-    .data();
-    let good_xfer = Instruction {
-        program_id,
-        accounts: vec![
-            AccountMeta::new_readonly(payer.pubkey(), true),
-            AccountMeta::new(pk(anchor_pda), false),
-            AccountMeta::new(pk(status_pda), false),
-        ],
-        data: xfer_ok_data,
-    };
-    send(&mut svm, &payer, good_xfer);
+    // issuer on immutable anchor unchanged
+    let anchor_acct = svm.get_account(&pk(anchor_pda)).unwrap();
+    assert_eq!(&anchor_acct.data[10..42], payer.pubkey().as_ref());
 
-    let anchor_acct = svm.get_account(&pk(anchor_pda)).expect("anchor account");
-    // layout: disc(8) + version(1) + bump(1) + issuer(32) + controller(32) + ...
-    let issuer_bytes = &anchor_acct.data[10..42];
-    assert_eq!(issuer_bytes, payer.pubkey().as_ref(), "issuer must remain original");
-    let controller_bytes = &anchor_acct.data[42..74];
+    // atomic supersede by new controller
+    let mut new_digest = [0u8; 32];
+    new_digest[0] = 0xef;
+    let (new_a, _) = AnchorPubkey::find_program_address(
+        &[b"qal", issuer_anchor.as_ref(), new_digest.as_ref()],
+        &program_id_anchor,
+    );
+    let (new_s, _) = AnchorPubkey::find_program_address(
+        &[
+            b"qal",
+            b"status",
+            issuer_anchor.as_ref(),
+            new_digest.as_ref(),
+        ],
+        &program_id_anchor,
+    );
+
+    send(
+        &mut svm,
+        &stranger,
+        Instruction {
+            program_id,
+            accounts: vec![
+                AccountMeta::new(stranger.pubkey(), true),
+                AccountMeta::new_readonly(pk(anchor_pda), false),
+                AccountMeta::new(pk(status_pda), false),
+                AccountMeta::new(pk(new_a), false),
+                AccountMeta::new(pk(new_s), false),
+                AccountMeta::new_readonly(pk(anchor_lang::system_program::ID), false),
+            ],
+            data: qal_anchor::instruction::SupersedeVault {
+                new_vault_digest: new_digest,
+                new_qev_schema_hash: schema_hash,
+                new_content_ref_hash: content_ref,
+                new_flags: 0,
+            }
+            .data(),
+        },
+    );
+
+    // old status superseded (layout: disc8 + anchor32 + controller32 + state u8)
+    let status_acct = svm.get_account(&pk(status_pda)).unwrap();
+    let state = status_acct.data[8 + 32 + 32];
+    assert_eq!(state, 2, "old status must be superseded");
+
+    // new parent claim == old digest
+    let new_anchor = svm.get_account(&pk(new_a)).unwrap();
+    // disc8 + ver1 + bump1 + issuer32 + vault_digest32 + schema32 + content32 + parent32
+    let parent_off = 8 + 2 + 32 + 32 + 32 + 32;
     assert_eq!(
-        controller_bytes,
-        new_controller.as_ref(),
-        "controller should update"
+        &new_anchor.data[parent_off..parent_off + 32],
+        &vault_digest,
+        "parent_digest_claim must equal old digest"
     );
-}
-
-// Silence unused import warning if ToAccountMetas not used
-#[allow(dead_code)]
-fn _touch_traits() {
-    let _ = std::any::type_name::<fn() -> dyn ToAccountMetas>();
 }

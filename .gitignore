@@ -17,11 +17,12 @@ test-ledger/
 !.env.example
 *.pem
 id.json
-# Keep the program keypair so Program ID stays stable across clones during v0.1.
-# Do not reuse this keypair for wallets that hold funds.
+
+# NEVER commit Solana program or wallet keypairs
 *-keypair.json
-!programs/qal-anchor/target-keypair.json
-!target/deploy/qal_anchor-keypair.json
+**/target-keypair.json
+keys/
+*.so
 
 # OS / editor
 .DS_Store
@@ -37,6 +38,8 @@ evidence/
 !fixtures/**/*.qev
 test-output/
 coverage/
+docs/demo-video/shots/
+docs/demo-video/frames/
 
 # Logs
 *.log
@@ -46,3 +49,4 @@ pnpm-debug.log*
 # Package managers
 yarn.lock
 package-lock.json
+apps/verifier/vendor/

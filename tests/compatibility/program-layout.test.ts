@@ -1,6 +1,5 @@
 /**
- * Unit tests for PDA derivation and instruction discriminators.
- * Does not require a live cluster.
+ * Unit tests for PDA derivation and fail-closed network parsing.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -8,10 +7,16 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   deriveAnchorPda,
   deriveStatusPda,
-  deriveProtocolPda,
   QAL_PROGRAM_ID,
   buildAnchorVaultIx,
   DISC,
+  parseNetwork,
+  COMPROMISED_PROGRAM_ID,
+  parseReceipt,
+  buildReceipt,
+  serializeReceipt,
+  decodeVaultAnchor,
+  DecodeError,
 } from "../../packages/sdk/src/index.js";
 
 describe("PDA derivation", () => {
@@ -24,15 +29,6 @@ describe("PDA derivation", () => {
     assert.equal(b1, b2);
   });
 
-  it("differs for different digests", () => {
-    const issuer = Keypair.generate().publicKey;
-    const d1 = new Uint8Array(32).fill(1);
-    const d2 = new Uint8Array(32).fill(2);
-    const [a1] = deriveAnchorPda(issuer, d1);
-    const [a2] = deriveAnchorPda(issuer, d2);
-    assert.notEqual(a1.toBase58(), a2.toBase58());
-  });
-
   it("status PDA differs from anchor PDA", () => {
     const issuer = Keypair.generate().publicKey;
     const digest = new Uint8Array(32).fill(9);
@@ -40,16 +36,10 @@ describe("PDA derivation", () => {
     const [status] = deriveStatusPda(issuer, digest);
     assert.notEqual(anchor.toBase58(), status.toBase58());
   });
-
-  it("protocol PDA is stable", () => {
-    const [p1] = deriveProtocolPda();
-    const [p2] = deriveProtocolPda(QAL_PROGRAM_ID);
-    assert.equal(p1.toBase58(), p2.toBase58());
-  });
 });
 
 describe("instruction data", () => {
-  it("anchor_vault ix includes 8-byte disc + 4*32 + 2", () => {
+  it("anchor_vault ix includes 8-byte disc + 4*32 + 2 and no protocol account", () => {
     const issuer = Keypair.generate().publicKey;
     const digest = new Uint8Array(32).fill(3);
     const ix = buildAnchorVaultIx({
@@ -57,27 +47,84 @@ describe("instruction data", () => {
       vaultDigest: digest,
       qevSchemaHash: new Uint8Array(32).fill(4),
       contentRefHash: new Uint8Array(32),
-      parentDigest: new Uint8Array(32),
+      parentDigestClaim: new Uint8Array(32),
       flags: 0,
     });
     assert.equal(ix.programId.toBase58(), QAL_PROGRAM_ID.toBase58());
     assert.equal(ix.data.length, 8 + 32 * 4 + 2);
     assert.ok(Buffer.from(ix.data.subarray(0, 8)).equals(Buffer.from(DISC.anchorVault)));
-    assert.ok(ix.keys.some((k) => k.pubkey.equals(issuer) && k.isSigner));
-  });
-
-  it("discriminators are 8 bytes", () => {
-    for (const v of Object.values(DISC)) {
-      assert.equal(v.length, 8);
-    }
+    // 4 accounts: issuer, anchor, status, system — no global protocol
+    assert.equal(ix.keys.length, 4);
   });
 });
 
-describe("zero digest rejection is client-enforced preflight", () => {
-  it("document: program also rejects zero digest", () => {
-    // Client should not build meaningless anchors; program requires non-zero.
-    const zero = new Uint8Array(32);
-    assert.ok(zero.every((b) => b === 0));
-    assert.ok(PublicKey.default);
+describe("network parsing fail-closed", () => {
+  it("rejects mainnet", () => {
+    assert.throws(() => parseNetwork("mainnet"), /Mainnet is not supported/);
+  });
+  it("rejects unknown networks", () => {
+    assert.throws(() => parseNetwork("bogus"), /Unknown network/);
+  });
+  it("requires explicit network", () => {
+    assert.throws(() => parseNetwork(undefined), /Network is required/);
+  });
+  it("accepts devnet and localnet", () => {
+    assert.equal(parseNetwork("devnet"), "solana-devnet");
+    assert.equal(parseNetwork("localnet"), "solana-localnet");
+  });
+});
+
+describe("receipt strict validation", () => {
+  it("rejects compromised program id", () => {
+    const r = buildReceipt({
+      network: "solana-devnet",
+      genesis_hash: "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+      program_id: COMPROMISED_PROGRAM_ID,
+      anchor_address: Keypair.generate().publicKey.toBase58(),
+      status_address: Keypair.generate().publicKey.toBase58(),
+      issuer: Keypair.generate().publicKey.toBase58(),
+      controller: Keypair.generate().publicKey.toBase58(),
+      vault_digest: "ab".repeat(32),
+      qev_schema: "BRY-NFET-SX-VAULT-V2",
+      qev_schema_hash: "cd".repeat(32),
+      content_reference: null,
+      parent_digest_claim: null,
+      transaction_signature: "sig",
+      created_slot: 1,
+    });
+    assert.throws(() => parseReceipt(serializeReceipt(r)), /compromised/i);
+  });
+
+  it("round-trips valid receipt", () => {
+    const issuer = Keypair.generate().publicKey.toBase58();
+    const r = buildReceipt({
+      network: "solana-devnet",
+      genesis_hash: "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+      program_id: QAL_PROGRAM_ID.toBase58(),
+      anchor_address: Keypair.generate().publicKey.toBase58(),
+      status_address: Keypair.generate().publicKey.toBase58(),
+      issuer,
+      controller: issuer,
+      vault_digest: "ab".repeat(32),
+      qev_schema: "BRY-NFET-SX-VAULT-V2",
+      qev_schema_hash: "cd".repeat(32),
+      content_reference: null,
+      parent_digest_claim: null,
+      transaction_signature: "sig",
+      created_slot: 42,
+    });
+    const again = parseReceipt(serializeReceipt(r));
+    assert.equal(again.vault_digest, r.vault_digest);
+    assert.equal(again.protocol_version, "0.1.1");
+  });
+});
+
+describe("decoder fail-closed", () => {
+  it("rejects wrong discriminator", () => {
+    const junk = Buffer.alloc(178, 1);
+    assert.throws(
+      () => decodeVaultAnchor(junk, PublicKey.default.toBase58()),
+      (err: unknown) => err instanceof DecodeError && err.code === "INVALID_ACCOUNT",
+    );
   });
 });

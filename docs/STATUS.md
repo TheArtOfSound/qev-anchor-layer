@@ -1,60 +1,42 @@
-# QAL Implementation Status
+# QAL Implementation Status (v0.1.1 security remediation)
 
-## Complete (v0.1 vertical slice)
+## Label
 
-| Area | Status |
-|------|--------|
-| Monorepo scaffold | Done |
-| Protocol specs (`spec/*`) | Done |
-| Security / disclaimer docs | Done |
-| Solana program `qal-anchor` | Done + LiteSVM tests |
-| TypeScript SDK `@qira/qal-sdk` | Done |
-| CLI `@qira/qal-cli` | Done |
-| Browser verifier (static) | Done |
-| QEV pin `@bryan237l/qev-cli@0.30.0` | Done (external only) |
-| Unit + tamper tests | Pass (19/19) |
-| Program tests (LiteSVM) | Pass (initialize, anchor, zero-digest reject, status, unauthorized transfer, issuer immutability) |
-| Fixtures | Done |
+> **Experimental pre-alpha. Devnet only. Unaudited. Do not use for production evidence.**
 
-## Incomplete / blocked in this environment
+## Remediation vs audit launch blockers
+
+| # | Blocker | Status |
+|---|---------|--------|
+| 1 | Committed program keypair | **Fixed** — removed from tree; old ID documented compromised; new ID + local-only keypair |
+| 2 | Fail-open VALID_ACTIVE | **Fixed** — missing/unknown status → INDETERMINATE / STATUS_NOT_FOUND |
+| 3 | Decoder accepts non-QAL data | **Fixed** — strict discriminator + owner checks |
+| 4 | Mutable “immutable” anchor | **Fixed** — controller only on VaultStatus; anchor layout v2 |
+| 5 | Protocol init capture | **Fixed** — `initialize_protocol` removed; no global config on hot path |
+| 6 | Global counter contention | **Fixed** — no ProtocolConfig writes on anchor |
+| 7 | Browser CDN runtime | **Fixed** — vendor build; CSP; no mainnet option |
+| 8 | Supersede false success | **Fixed** — atomic `supersede_vault` instruction; honest CLI errors |
+| 9 | Permissive mainnet/network | **Fixed** — reject mainnet/unknown; genesis hash binding on receipts |
+| 10 | Weak default tests | **Improved** — unit + program tests in `pnpm test`; CI workflow added |
+
+## Still incomplete
 
 | Item | Notes |
 |------|-------|
-| **Devnet deploy** | Wallet `13Foiem…` has **0 SOL**; public faucet rate-limited. Program built at `target/deploy/qal_anchor.so` but **not deployed** to public devnet from this session. |
-| **Devnet e2e test** | Gated behind `QAL_DEVNET=1`; requires funded wallet + deployed program. |
-| **Local validator e2e** | `solana-test-validator` failed to become healthy (HTTP 500) in this environment. LiteSVM covers program logic instead. |
-| **npm names `@qira/qal-*`** | Availability not verified on registry. |
-| **GitHub remote** | Create/push `TheArtOfSound/qev-anchor-layer` after review. |
-| **Verified builds metadata** | Documented path only; not submitted. |
-| **Mainnet** | Out of scope for v0.1. |
+| Live devnet deploy + e2e evidence | Requires funded wallet + deployer keypair outside git |
+| External audit | Not done |
+| Package split (`qal-core` browser-neutral) | Documented; not fully split |
+| Parent claim on-chain verification | Atomic supersede only; free-form claims labeled unverified |
+| SAS batching | Decision doc only (`docs/SAS_ARCHITECTURE.md`) |
+| Token | **None. Do not launch a token.** |
 
-## Proof that secrets never enter transactions
+## Program IDs
 
-1. Program instructions accept only fixed-size digests/hashes/pubkeys/flags — no string plaintext fields.
-2. SDK `describeAnchorPayload` / `anchorVault` hash the vault **locally** and submit only 32-byte digests.
-3. CLI refuses `--password` / `--phrase` flags.
-4. LiteSVM tests exercise instruction data of fixed length (`8 + 32*4 + 2` for `anchor_vault`).
+| | |
+|--|--|
+| Compromised | `AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf` |
+| Active pre-alpha | `6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR` |
 
-## How to finish the live chain path
+## Package release
 
-```bash
-# Fund wallet (devnet)
-solana airdrop 2 --url https://api.devnet.solana.com
-
-# Deploy
-solana config set --url https://api.devnet.solana.com
-anchor deploy --provider.cluster devnet
-
-# E2E
-QAL_DEVNET=1 pnpm test:devnet
-qal doctor
-qal encrypt evidence.json --out evidence.qev
-qal anchor evidence.qev --network devnet
-qal verify evidence.qev --network devnet
-```
-
-## Program ID
-
-```
-AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf
-```
+Not published to npm. Names `@qira/qal-*` remain private workspace packages.

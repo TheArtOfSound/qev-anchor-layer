@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * qal — QEV Anchor Layer CLI
+ * qal — QEV Anchor Layer CLI (pre-alpha)
  *
+ * Experimental. Devnet/localnet only. Unaudited.
  * Encrypt locally. Anchor publicly. Verify anywhere.
  * Never put passwords on the command line.
  */
@@ -9,7 +10,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { createRequire } from "node:module";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
   QAL_VERSION,
@@ -19,33 +19,32 @@ import {
   encryptWithQev,
   computeVaultDigest,
   DigestError,
-  networkFromCli,
+  parseNetwork,
   defaultRpcUrl,
   QAL_PROGRAM_ID,
+  COMPROMISED_PROGRAM_ID,
   programExists,
   describeAnchorPayload,
   anchorVault,
   verifyVault,
+  verifyVaultWithReceipt,
   toCliVerifyJson,
   fetchAnchorByAddress,
   fetchStatusByAddress,
   revokeAnchor,
+  supersedeVault,
   walkRevisionHistory,
   serializeReceipt,
-  parseReceipt,
   hexToBytes,
-  STATUS_CODES,
   deriveStatusPda,
   type SolanaNetwork,
 } from "@qira/qal-sdk";
 import { loadWallet, walletPathDefault } from "./wallet.js";
 import { promptSecret } from "./prompt.js";
 
-const require = createRequire(import.meta.url);
-
 function usage(): string {
   return `
-qal — QEV Anchor Layer v${QAL_VERSION}
+qal — QEV Anchor Layer v${QAL_VERSION}  [PRE-ALPHA · DEVNET/LOCALNET ONLY · UNAUDITED]
 
   Encrypt locally. Anchor publicly. Verify anywhere.
 
@@ -53,15 +52,16 @@ Usage:
   qal doctor
   qal encrypt <INPUT> --out <OUTPUT>
   qal anchor <VAULT> --network devnet [--receipt out.json] [--parent <HEX>] [--cid <CID>]
-  qal verify <VAULT> --network devnet [--issuer <PUBKEY>] [--receipt receipt.json]
+  qal verify <VAULT> --network devnet --receipt receipt.json
   qal inspect <ANCHOR_ADDRESS> --network devnet
   qal history <VAULT_DIGEST> --issuer <PUBKEY> --network devnet
   qal revoke <ANCHOR_ADDRESS> --network devnet
-  qal supersede <OLD_VAULT> <NEW_VAULT> --network devnet
+  qal supersede <OLD_VAULT> <NEW_VAULT> --network devnet --issuer <PUBKEY>
 
 Notes:
   - Passwords are prompted interactively (never --password).
-  - On-chain data is digests + registry state only — not the vault payload.
+  - Prefer receipt-directed verification for DIGEST_MISMATCH semantics.
+  - Compromised program ID refused: ${COMPROMISED_PROGRAM_ID}
   - QEV package pinned: @bryan237l/qev-cli@${PINNED_QEV_VERSION}
 `.trim();
 }
@@ -95,7 +95,6 @@ function parseArgs(argv: string[]): {
     }
     positional.push(a);
   }
-
   return { cmd, positional, flags };
 }
 
@@ -105,7 +104,7 @@ function flagStr(flags: Record<string, string | boolean>, key: string): string |
 }
 
 function network(flags: Record<string, string | boolean>): SolanaNetwork {
-  return networkFromCli(flagStr(flags, "network"));
+  return parseNetwork(flagStr(flags, "network"));
 }
 
 async function readJsonFile(filePath: string): Promise<unknown> {
@@ -117,10 +116,9 @@ async function cmdDoctor(): Promise<number> {
   const lines: string[] = [];
   let failed = false;
 
-  const { installedQevPackageVersion } = await import("@qira/qal-sdk");
   lines.push(`QAL version:        ${QAL_VERSION}`);
+  lines.push(`Status:             PRE-ALPHA · UNAUDITED · DEVNET/LOCALNET ONLY`);
   lines.push(`QEV pinned:         @bryan237l/qev-cli@${PINNED_QEV_VERSION}`);
-  lines.push(`QEV npm package:    ${installedQevPackageVersion()}`);
   lines.push(`QEV VERSION const:  ${QEV_PACKAGE_VERSION}`);
 
   const nodeMajor = Number(process.versions.node.split(".")[0]);
@@ -132,7 +130,9 @@ async function cmdDoctor(): Promise<number> {
     lines.push("  OK: Node version");
   }
 
-  const qev = await checkQevCompatibility();
+  const qev = await checkQevCompatibility({ requirePinnedVersion: true });
+  lines.push(`QEV npm package:    ${qev.qevVersion}`);
+  lines.push(`QEV version match:  ${qev.versionMatch ? "OK" : "MISMATCH"}`);
   if (qev.ok) {
     lines.push("QEV self-test:      PASS");
   } else {
@@ -144,24 +144,21 @@ async function cmdDoctor(): Promise<number> {
   const rpc = defaultRpcUrl(net);
   lines.push(`Default RPC:        ${rpc}`);
   lines.push(`Program ID:         ${QAL_PROGRAM_ID.toBase58()}`);
+  lines.push(`Compromised ID:     ${COMPROMISED_PROGRAM_ID} (DO NOT USE)`);
 
   try {
     const conn = new Connection(rpc, "confirmed");
+    const genesis = await conn.getGenesisHash();
     const epoch = await conn.getEpochInfo();
     lines.push(`RPC connectivity:   OK (epoch ${epoch.epoch}, slot ${epoch.absoluteSlot})`);
+    lines.push(`Genesis hash:       ${genesis}`);
     lines.push(`Cluster:            ${net}`);
 
     const present = await programExists(conn);
     if (present) {
       lines.push("Program deployed:   YES");
-      const info = await conn.getAccountInfo(QAL_PROGRAM_ID);
-      if (info) {
-        lines.push(`Program data len:   ${info.data.length} bytes`);
-      }
     } else {
-      lines.push("Program deployed:   NO (deploy to devnet/localnet before anchoring)");
-      // Not a hard fail for doctor when developing — warn only if QAL_STRICT_DOCTOR
-      if (process.env.QAL_STRICT_DOCTOR === "1") failed = true;
+      lines.push("Program deployed:   NO (deploy before anchoring; keypair NOT in git)");
     }
   } catch (err) {
     lines.push(`RPC connectivity:   FAIL — ${err instanceof Error ? err.message : String(err)}`);
@@ -180,7 +177,7 @@ async function cmdDoctor(): Promise<number> {
 
   lines.push("");
   lines.push(
-    "Note: program source verification ≠ security audit. See SECURITY.md and DISCLAIMER.md.",
+    "Do not use for production evidence. Verified builds ≠ audit. See SECURITY.md.",
   );
 
   console.log(lines.join("\n"));
@@ -205,13 +202,7 @@ async function cmdEncrypt(input: string, out: string): Promise<number> {
     return 1;
   }
 
-  const vault = await encryptWithQev({
-    plaintext,
-    password,
-    mode: "self",
-  });
-
-  // Wipe references best-effort (JS strings are immutable; avoid logging).
+  const vault = await encryptWithQev({ plaintext, password, mode: "self" });
   await fs.mkdir(path.dirname(path.resolve(out)), { recursive: true });
   await fs.writeFile(out, `${JSON.stringify(vault, null, 2)}\n`, "utf8");
 
@@ -219,7 +210,7 @@ async function cmdEncrypt(input: string, out: string): Promise<number> {
   console.log(`Wrote encrypted QEV vault: ${out}`);
   console.log(`Schema:  ${d.schema}`);
   console.log(`Digest:  ${d.digest}`);
-  console.log("Plaintext and passphrase were not written to disk by QAL.");
+  console.log("Note: digest proves this exact encrypted envelope, not the underlying document identity.");
   return 0;
 }
 
@@ -243,12 +234,16 @@ async function cmdAnchor(
 
   const parent = flagStr(flags, "parent") ?? null;
   const cid = flagStr(flags, "cid");
-  const contentReference = cid ? (cid.startsWith("ipfs://") ? cid : `ipfs://${cid}`) : null;
+  const contentReference = cid
+    ? cid.startsWith("ipfs://")
+      ? cid
+      : `ipfs://${cid}`
+    : null;
 
   const preview = describeAnchorPayload({
     vault,
     network: net,
-    parentDigest: parent,
+    parentDigestClaim: parent,
     contentReference,
     issuer: wallet.publicKey.toBase58(),
   });
@@ -266,7 +261,7 @@ async function cmdAnchor(
       {
         vault,
         network: net,
-        parentDigest: parent,
+        parentDigestClaim: parent,
         contentReference,
       },
       wallet,
@@ -284,11 +279,10 @@ async function cmdAnchor(
     console.log(`Anchor PDA:  ${receipt.anchor_address}`);
     console.log(`Status PDA:  ${receipt.status_address}`);
     console.log(`Digest:      ${receipt.vault_digest}`);
+    console.log(`Genesis:     ${receipt.genesis_hash}`);
     console.log(`Receipt:     ${receiptPath}`);
     if (net === "solana-devnet") {
-      console.log(
-        `Explorer:    https://explorer.solana.com/tx/${signature}?cluster=devnet`,
-      );
+      console.log(`Explorer:    https://explorer.solana.com/tx/${signature}?cluster=devnet`);
     }
     return 0;
   } catch (err) {
@@ -301,43 +295,37 @@ async function cmdVerify(
   vaultPath: string,
   flags: Record<string, string | boolean>,
 ): Promise<number> {
-  const net = network(flags);
   const vault = await readJsonFile(vaultPath);
 
-  let issuer = flagStr(flags, "issuer");
-  const receiptPath = flagStr(flags, "receipt");
-  if (!issuer && receiptPath) {
-    const receipt = parseReceipt(await fs.readFile(receiptPath, "utf8"));
-    issuer = receipt.issuer;
-  }
-  // Also try sibling receipt
-  if (!issuer) {
+  let receiptPath = flagStr(flags, "receipt");
+  if (!receiptPath) {
     const sibling = vaultPath.replace(/\.qev(\.json)?$/i, "") + ".qal-receipt.json";
     try {
-      const receipt = parseReceipt(await fs.readFile(sibling, "utf8"));
-      issuer = receipt.issuer;
+      await fs.access(sibling);
+      receiptPath = sibling;
     } catch {
-      // ignore
+      // none
     }
   }
 
-  const result = await verifyVault(vault, {
-    network: net,
-    issuer,
-  });
+  let result;
+  if (receiptPath) {
+    const receiptJson = await fs.readFile(receiptPath, "utf8");
+    result = await verifyVaultWithReceipt(vault, receiptJson);
+  } else {
+    const net = network(flags);
+    const issuer = flagStr(flags, "issuer");
+    if (!issuer) {
+      console.error(
+        "Receipt-directed verification preferred. Pass --receipt <file> or --issuer <PUBKEY> --network <net>.",
+      );
+      return 2;
+    }
+    result = await verifyVault(vault, { network: net, issuer });
+  }
 
   console.log(JSON.stringify(toCliVerifyJson(result), null, 2));
 
-  const ok =
-    result.cryptographic_match &&
-    (result.outcome === "VALID_ACTIVE" ||
-      result.outcome === "VALID_REVOKED" ||
-      result.outcome === "VALID_SUPERSEDED" ||
-      result.outcome === "VALID_DISPUTED");
-
-  // Historical anchors that are revoked still exit 0 when crypto matches,
-  // but we use exit 0 only for any successful crypto verification path
-  // so scripts can branch on outcome field.
   if (
     result.outcome === "VALID_ACTIVE" ||
     result.outcome === "VALID_REVOKED" ||
@@ -346,7 +334,7 @@ async function cmdVerify(
   ) {
     return 0;
   }
-  return ok ? 0 : 1;
+  return 1;
 }
 
 async function cmdInspect(
@@ -354,37 +342,41 @@ async function cmdInspect(
   flags: Record<string, string | boolean>,
 ): Promise<number> {
   const net = network(flags);
-  const anchor = await fetchAnchorByAddress(anchorAddress, { network: net });
-  if (!anchor) {
-    console.error(`Anchor not found: ${anchorAddress}`);
+  try {
+    const anchor = await fetchAnchorByAddress(anchorAddress, { network: net });
+    if (!anchor) {
+      console.error(`Anchor not found: ${anchorAddress}`);
+      return 1;
+    }
+    const [statusPda] = deriveStatusPda(
+      new PublicKey(anchor.issuer),
+      hexToBytes(anchor.vault_digest),
+    );
+    const status = await fetchStatusByAddress(statusPda.toBase58(), { network: net });
+
+    console.log(
+      JSON.stringify(
+        {
+          network: net,
+          program_id: QAL_PROGRAM_ID.toBase58(),
+          anchor,
+          status,
+          notes: [
+            "PRE-ALPHA · UNAUDITED",
+            "Wallet anchoring proves control of the anchoring wallet, not real-world authorship.",
+            "parent_digest_claim is unverified unless flags include atomic supersede bit.",
+            "No plaintext or keys are stored on-chain.",
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+    return 0;
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
     return 1;
   }
-
-  // Derive status PDA from issuer + digest
-  const [statusPda] = deriveStatusPda(
-    new PublicKey(anchor.issuer),
-    hexToBytes(anchor.vault_digest),
-  );
-  const status = await fetchStatusByAddress(statusPda.toBase58(), { network: net });
-
-  console.log(
-    JSON.stringify(
-      {
-        network: net,
-        program_id: QAL_PROGRAM_ID.toBase58(),
-        anchor,
-        status,
-        notes: [
-          "Wallet anchoring proves control of the anchoring wallet, not real-world authorship.",
-          "Verified program source does not imply a security audit.",
-          "No plaintext or keys are stored on-chain.",
-        ],
-      },
-      null,
-      2,
-    ),
-  );
-  return 0;
 }
 
 async function cmdHistory(
@@ -406,13 +398,16 @@ async function cmdHistory(
         issuer: issuerStr,
         start_digest: digest,
         depth: chain.length,
+        warning:
+          "parent_digest_claim may be an unverified assertion unless parent_claim_atomic is true",
         entries: chain.map((e) => ({
           vault_digest: e.vault_digest,
-          parent_digest: e.parent_digest,
+          parent_digest_claim: e.parent_digest_claim,
+          parent_claim_atomic: e.parent_claim_atomic,
           anchor_address: e.anchor.address,
           status: e.status?.state ?? null,
           created_slot: e.anchor.created_slot,
-          controller: e.anchor.controller,
+          controller: e.status?.controller ?? null,
         })),
       },
       null,
@@ -428,17 +423,26 @@ async function cmdRevoke(
 ): Promise<number> {
   const net = network(flags);
   const wallet = await loadWallet(flagStr(flags, "wallet"));
-  const anchor = await fetchAnchorByAddress(anchorAddress, { network: net });
-  if (!anchor) {
-    console.error(`Anchor not found: ${anchorAddress}`);
-    return 1;
-  }
-  if (anchor.controller !== wallet.publicKey.toBase58()) {
-    console.error("Wallet is not the current controller");
-    return 1;
-  }
-
   try {
+    const anchor = await fetchAnchorByAddress(anchorAddress, { network: net });
+    if (!anchor) {
+      console.error(`Anchor not found: ${anchorAddress}`);
+      return 1;
+    }
+    const [statusPda] = deriveStatusPda(
+      new PublicKey(anchor.issuer),
+      hexToBytes(anchor.vault_digest),
+    );
+    const status = await fetchStatusByAddress(statusPda.toBase58(), { network: net });
+    if (!status) {
+      console.error("Status account missing");
+      return 1;
+    }
+    if (status.controller !== wallet.publicKey.toBase58()) {
+      console.error("Wallet is not the current controller");
+      return 1;
+    }
+
     const sig = await revokeAnchor(
       new PublicKey(anchor.issuer),
       hexToBytes(anchor.vault_digest),
@@ -472,73 +476,69 @@ async function cmdSupersede(
 ): Promise<number> {
   const net = network(flags);
   const wallet = await loadWallet(flagStr(flags, "wallet"));
+  const issuerStr = flagStr(flags, "issuer") ?? wallet.publicKey.toBase58();
+
   const oldVault = await readJsonFile(oldVaultPath);
   const newVault = await readJsonFile(newVaultPath);
 
-  const oldDigest = computeVaultDigest(oldVault);
-  const newDigest = computeVaultDigest(newVault);
-
-  // Anchor new with parent = old digest (revision lineage).
-  const { receipt, signature } = await anchorVault(
-    {
-      vault: newVault,
-      network: net,
-      parentDigest: oldDigest.digest,
-      contentReference: flagStr(flags, "cid")
-        ? `ipfs://${flagStr(flags, "cid")}`
-        : null,
-    },
-    wallet,
-    { network: net },
-  );
-
-  // Mark old endorsement superseded (does not erase historical anchor).
   try {
-    const { setStatus, fetchAnchorForIssuerDigest } = await import("@qira/qal-sdk");
-    const oldOnChain = await fetchAnchorForIssuerDigest(
-      wallet.publicKey,
-      oldDigest.digestBytes,
-      { network: net },
+    const { receipt, signature, oldDigest, newDigest, fullySuperseded } =
+      await supersedeVault(
+        {
+          oldVault,
+          newVault,
+          issuer: new PublicKey(issuerStr),
+          contentReference: flagStr(flags, "cid")
+            ? `ipfs://${flagStr(flags, "cid")}`
+            : null,
+        },
+        wallet,
+        { network: net },
+      );
+
+    if (!fullySuperseded) {
+      // Type says true; belt-and-suspenders
+      console.error("Supersede did not complete atomically");
+      return 1;
+    }
+
+    const receiptPath =
+      flagStr(flags, "receipt") ??
+      newVaultPath.replace(/\.qev(\.json)?$/i, "") + ".qal-receipt.json";
+    await fs.writeFile(receiptPath, serializeReceipt(receipt), "utf8");
+
+    console.log(
+      JSON.stringify(
+        {
+          fully_superseded: true,
+          atomic: true,
+          old_digest: oldDigest,
+          new_digest: newDigest,
+          parent_digest_claim: oldDigest,
+          new_anchor: receipt.anchor_address,
+          transaction_signature: signature,
+          receipt: receiptPath,
+        },
+        null,
+        2,
+      ),
     );
-    const issuerPk = oldOnChain.anchor
-      ? new PublicKey(oldOnChain.anchor.issuer)
-      : wallet.publicKey;
-    await setStatus(
-      {
-        issuer: issuerPk,
-        vaultDigest: oldDigest.digestBytes,
-        newState: STATUS_CODES.superseded,
-      },
-      wallet,
-      { network: net },
-    );
+    return 0;
   } catch (err) {
+    // Never report superseded:true on partial failure
     console.error(
-      `Warning: could not mark old anchor superseded: ${err instanceof Error ? err.message : String(err)}`,
+      JSON.stringify(
+        {
+          fully_superseded: false,
+          atomic: true,
+          error: err instanceof Error ? err.message : String(err),
+        },
+        null,
+        2,
+      ),
     );
+    return 1;
   }
-
-  const receiptPath =
-    flagStr(flags, "receipt") ??
-    newVaultPath.replace(/\.qev(\.json)?$/i, "") + ".qal-receipt.json";
-  await fs.writeFile(receiptPath, serializeReceipt(receipt), "utf8");
-
-  console.log(
-    JSON.stringify(
-      {
-        superseded: true,
-        old_digest: oldDigest.digest,
-        new_digest: newDigest.digest,
-        parent_digest: oldDigest.digest,
-        new_anchor: receipt.anchor_address,
-        transaction_signature: signature,
-        receipt: receiptPath,
-      },
-      null,
-      2,
-    ),
-  );
-  return 0;
 }
 
 async function main(): Promise<void> {
@@ -549,7 +549,6 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  // Reject password flags hard
   for (const bad of ["password", "phrase", "passphrase", "secret"]) {
     if (bad in flags) {
       console.error(
@@ -589,7 +588,7 @@ async function main(): Promise<void> {
       case "verify": {
         const vault = positional[0];
         if (!vault) {
-          console.error("Usage: qal verify <VAULT> --network devnet [--issuer <PUBKEY>]");
+          console.error("Usage: qal verify <VAULT> --receipt receipt.json");
           code = 2;
           break;
         }
@@ -599,7 +598,7 @@ async function main(): Promise<void> {
       case "inspect": {
         const addr = positional[0];
         if (!addr) {
-          console.error("Usage: qal inspect <ANCHOR_ADDRESS>");
+          console.error("Usage: qal inspect <ANCHOR_ADDRESS> --network devnet");
           code = 2;
           break;
         }
@@ -609,7 +608,7 @@ async function main(): Promise<void> {
       case "history": {
         const digest = positional[0];
         if (!digest) {
-          console.error("Usage: qal history <VAULT_DIGEST> --issuer <PUBKEY>");
+          console.error("Usage: qal history <VAULT_DIGEST> --issuer <PUBKEY> --network devnet");
           code = 2;
           break;
         }
@@ -619,7 +618,7 @@ async function main(): Promise<void> {
       case "revoke": {
         const addr = positional[0];
         if (!addr) {
-          console.error("Usage: qal revoke <ANCHOR_ADDRESS>");
+          console.error("Usage: qal revoke <ANCHOR_ADDRESS> --network devnet");
           code = 2;
           break;
         }
@@ -630,7 +629,9 @@ async function main(): Promise<void> {
         const oldV = positional[0];
         const newV = positional[1];
         if (!oldV || !newV) {
-          console.error("Usage: qal supersede <OLD_VAULT> <NEW_VAULT>");
+          console.error(
+            "Usage: qal supersede <OLD_VAULT> <NEW_VAULT> --network devnet --issuer <PUBKEY>",
+          );
           code = 2;
           break;
         }
@@ -652,8 +653,5 @@ async function main(): Promise<void> {
 
   process.exit(code);
 }
-
-// silence unused require in production builds if tree-shaken differently
-void require;
 
 main();

@@ -1,0 +1,28 @@
+<!DOCTYPE html><html><head><link rel="stylesheet" href="slides.css"></head><body>
+<div class="slide">
+  <div class="badge">Step 2 · Public</div>
+  <div class="big-num">02</div>
+  <h2>Anchor the digest on Solana</h2>
+  <div class="mono">qal anchor evidence.qev --network devnet</div>
+  <div class="split">
+    <div>
+      <h3 style="font-size:28px;margin:20px 0 12px;color:#9aadc4">What goes on-chain</h3>
+      <ul class="list">
+        <li>32-byte vault digest</li>
+        <li>Schema hash + optional parent digest</li>
+        <li>Issuer & controller wallets</li>
+        <li>Active / revoked / superseded status</li>
+      </ul>
+    </div>
+    <div class="never">
+      <h3 style="font-size:28px;margin:20px 0 12px;color:#9aadc4">What never goes on-chain</h3>
+      <ul class="list">
+        <li>Plaintext document</li>
+        <li>QEV passphrase</li>
+        <li>Derived keys / content keys</li>
+        <li>Sensitive unencrypted labels</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer"><span>QAL how-it-works</span><span>05 / 08</span></div>
+</div></body></html>
