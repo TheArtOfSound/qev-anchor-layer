@@ -51,3 +51,4 @@ pnpm-debug.log*
 yarn.lock
 package-lock.json
 apps/verifier/vendor/
+apps/site/verify/vendor/

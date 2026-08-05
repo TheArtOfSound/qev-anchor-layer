@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docs — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="/">QAL</a>
+        <a href="/">Home</a>
+        <a href="/verify/">Verify</a>
+        <a href="/evidence/devnet/">Evidence</a>
+        <a class="active" href="/docs/">Docs</a>
+        <a href="/security/">Security</a>
+      </nav>
+
+      <div class="badge">Protocol overview</div>
+      <h1>How QAL works</h1>
+      <p class="tagline">
+        QEV encrypts on your machine. The chain stores a compact commitment
+        about that encrypted vault — not the payload.
+      </p>
+
+      <h2>Non-negotiable boundary</h2>
+      <div class="warn-box">
+        <strong>QEV does not run on-chain.</strong> Putting the vault on-chain
+        would be expensive, permanent, and pointless. QAL anchors digests and
+        registry state only.
+      </div>
+
+      <h2>Pipeline</h2>
+      <pre>artifact
+  → local QEV encryption (Argon2id + XChaCha20-Poly1305)
+  → canonical vault JSON
+  → SHA-256 digest
+  → optional encrypted storage (IPFS/local)
+  → Solana anchor
+  → portable receipt</pre>
+
+      <h2>Verify</h2>
+      <pre>supplied vault
+  → validate schema
+  → canonicalize + SHA-256
+  → read Solana anchor (receipt-directed)
+  → compare digests
+  → report match AND endorsement separately</pre>
+
+      <h2>CLI (after build)</h2>
+      <pre>pnpm install && pnpm build
+pnpm doctor
+qal encrypt evidence.json --out evidence.qev
+qal anchor evidence.qev --network devnet
+qal verify evidence.qev --receipt evidence.qal-receipt.json</pre>
+
+      <h2>Spec files in the repo</h2>
+      <ul class="clean">
+        <li><code>spec/QAL_PROTOCOL.md</code> — protocol overview</li>
+        <li><code>spec/DIGEST_RULES.md</code> — canonical hashing</li>
+        <li><code>spec/RECORD_FORMAT.md</code> — on-chain accounts</li>
+        <li><code>spec/VERIFICATION_STATES.md</code> — outcomes & tiers</li>
+        <li><code>spec/THREAT_MODEL.md</code> — what QAL does not protect</li>
+      </ul>
+
+      <h2>What QAL proves</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Does</h3>
+          <p>
+            This exact QEV vault bytestring existed and was committed by a
+            signing wallet, with later endorsement status.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Does not</h3>
+          <p>
+            Real-world authorship, legal notarization, plaintext truth, or that
+            revocation erases copies already decrypted.
+          </p>
+        </div>
+      </div>
+
+      <footer>
+        <a
+          href="https://github.com/TheArtOfSound/qev-anchor-layer"
+          target="_blank"
+          rel="noopener"
+          >Full docs on GitHub</a
+        >
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Security — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="/">QAL</a>
+        <a href="/">Home</a>
+        <a href="/verify/">Verify</a>
+        <a href="/evidence/devnet/">Evidence</a>
+        <a href="/docs/">Docs</a>
+        <a class="active" href="/security/">Security</a>
+      </nav>
+
+      <div class="badge">Unaudited pre-alpha</div>
+      <h1>Security & disclaimer</h1>
+      <p class="tagline">
+        Clear limits. No military-grade marketing. No token.
+      </p>
+
+      <div class="bad-box">
+        <strong>Do not use for production evidence.</strong> No independent
+        security audit. Devnet demonstration incomplete. Not legal notarization.
+      </div>
+
+      <h2>Compromised program ID</h2>
+      <p class="lead">
+        An early commit exposed a program keypair. That identity is abandoned:
+      </p>
+      <pre>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</pre>
+      <p class="lead">Active pre-alpha program ID (keypair not in git):</p>
+      <pre>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</pre>
+
+      <h2>QAL does not protect against</h2>
+      <ul class="clean never">
+        <li>Compromised endpoints or keyloggers</li>
+        <li>Weak or exposed QEV phrases</li>
+        <li>Malicious npm dependencies</li>
+        <li>Wallet compromise</li>
+        <li>RPC censorship or downtime</li>
+        <li>False real-world identity claims</li>
+        <li>Recipients copying decrypted plaintext</li>
+        <li>Loss of the only passphrase</li>
+        <li>Bugs in Solana, Anchor, wallets, or QEV</li>
+      </ul>
+
+      <h2>Repo docs</h2>
+      <ul class="clean">
+        <li><code>SECURITY.md</code></li>
+        <li><code>DISCLAIMER.md</code></li>
+        <li><code>spec/THREAT_MODEL.md</code></li>
+        <li><code>docs/COMPROMISED_PROGRAM_ID.md</code></li>
+      </ul>
+
+      <footer>
+        Report issues privately to maintainers · MIT license
+      </footer>
+    </div>
+  </body>
+</html>

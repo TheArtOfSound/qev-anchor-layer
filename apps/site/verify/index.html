@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https://api.devnet.solana.com http://127.0.0.1:8899 ws://127.0.0.1:8900; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    />
+    <title>Verify — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+    <style>
+      .drop {
+        border: 1.5px dashed var(--border);
+        border-radius: 10px;
+        padding: 1.75rem 1rem;
+        text-align: center;
+        color: var(--muted);
+        margin-bottom: 1rem;
+      }
+      .drop.drag {
+        border-color: var(--accent);
+        background: rgba(102, 179, 255, 0.06);
+      }
+      label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 0.35rem;
+      }
+      input[type="text"],
+      select {
+        width: 100%;
+        padding: 0.55rem 0.65rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 0.85rem;
+      }
+      button#verifyBtn {
+        margin-top: 0.85rem;
+        background: var(--accent);
+        color: #041018;
+        border: none;
+        border-radius: 8px;
+        padding: 0.65rem 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button#verifyBtn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .pill-out {
+        display: inline-block;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+      .pill-out.ok {
+        background: rgba(61, 214, 140, 0.15);
+        color: var(--ok);
+      }
+      .pill-out.warn {
+        background: rgba(245, 165, 36, 0.15);
+        color: var(--warn);
+      }
+      .pill-out.bad {
+        background: rgba(243, 18, 96, 0.15);
+        color: var(--bad);
+      }
+      #raw {
+        white-space: pre-wrap;
+        word-break: break-all;
+        font-size: 0.78rem;
+        margin-top: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="/">QAL</a>
+        <a href="/">Home</a>
+        <a class="active" href="/verify/">Verify</a>
+        <a href="/evidence/devnet/">Evidence</a>
+        <a href="/docs/">Docs</a>
+        <a href="/security/">Security</a>
+      </nav>
+
+      <div class="badge">Runs in your browser · vault not uploaded</div>
+      <h1>Verify a QEV vault</h1>
+      <p class="tagline">
+        Hash locally. Read public Solana state. Digest match and endorsement are
+        reported separately.
+      </p>
+
+      <div class="warn-box">
+        Prefer a <strong>QAL receipt</strong> for DIGEST_MISMATCH semantics.
+        Wallet anchoring proves control of a wallet — not real-world authorship.
+        Browser validation is lighter than the CLI/SDK.
+      </div>
+
+      <div class="card">
+        <div id="drop" class="drop">
+          Drop a QEV vault JSON here, or
+          <label style="display: inline; color: var(--accent); cursor: pointer">
+            choose a file
+            <input id="file" type="file" accept=".json,.qev,application/json" hidden />
+          </label>
+          <div id="fileName" style="margin-top: 0.5rem; font-size: 0.8rem"></div>
+        </div>
+
+        <div class="grid two">
+          <div>
+            <label for="receiptFile">QAL receipt (recommended)</label>
+            <input id="receiptFile" type="file" accept=".json,application/json" />
+          </div>
+          <div>
+            <label for="network">Network</label>
+            <select id="network">
+              <option value="devnet" selected>solana-devnet</option>
+              <option value="localnet">solana-localnet</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 0.85rem">
+          <label for="issuer">Issuer wallet (if no receipt)</label>
+          <input
+            id="issuer"
+            type="text"
+            placeholder="Base58 pubkey"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div style="margin-top: 0.85rem">
+          <label for="rpc">RPC URL override (optional)</label>
+          <input
+            id="rpc"
+            type="text"
+            placeholder="https://api.devnet.solana.com"
+            spellcheck="false"
+          />
+        </div>
+        <button id="verifyBtn" disabled>Verify locally</button>
+      </div>
+
+      <div class="card" id="results" hidden>
+        <div style="margin-bottom: 0.75rem">
+          <span id="outcomePill" class="pill-out">—</span>
+        </div>
+        <div class="kv" id="summary"></div>
+        <pre id="raw"></pre>
+      </div>
+
+      <footer>
+        <a href="/">← Home</a> · Vault bytes stay in this tab
+      </footer>
+    </div>
+    <script src="/verify/vendor/solana-web3.min.js"></script>
+    <script src="/verify/verifier.js"></script>
+  </body>
+</html>

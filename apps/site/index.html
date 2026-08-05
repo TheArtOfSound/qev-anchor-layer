@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QAL — QEV Anchor Layer</title>
+    <meta
+      name="description"
+      content="Encrypt locally. Anchor publicly. Verify anywhere. Experimental pre-alpha."
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="/">QAL</a>
+        <a class="active" href="/">Home</a>
+        <a href="/verify/">Verify</a>
+        <a href="/evidence/devnet/">Evidence</a>
+        <a href="/docs/">Docs</a>
+        <a href="/security/">Security</a>
+      </nav>
+
+      <div class="badge">Pre-alpha · Unaudited · Devnet-only</div>
+      <h1>Encrypt locally.<br />Anchor publicly.<br />Verify anywhere.</h1>
+      <p class="tagline">
+        QAL is an open-source anchor and verification layer for
+        <strong style="color: var(--text)">QEV</strong> encrypted artifacts —
+        not on-chain encryption, not a token, not a notarization service.
+      </p>
+
+      <div class="warn-box">
+        <strong>Experimental.</strong> Do not use for production evidence, legal
+        claims, or security-sensitive custody. Verified builds ≠ audited.
+      </div>
+
+      <div class="actions">
+        <a class="btn" href="/verify/">Open local verifier</a>
+        <a class="btn ghost" href="/docs/">How it works</a>
+        <a
+          class="btn ghost"
+          href="https://github.com/TheArtOfSound/qev-anchor-layer"
+          target="_blank"
+          rel="noopener"
+          >GitHub</a
+        >
+      </div>
+
+      <h2>What this is</h2>
+      <div class="grid three">
+        <div class="card">
+          <h3>QEV</h3>
+          <p>Local encrypted envelope. Confidentiality stays offline.</p>
+        </div>
+        <div class="card">
+          <h3>QAL</h3>
+          <p>Public seal: digest, issuer, status, revision lineage.</p>
+        </div>
+        <div class="card">
+          <h3>Solana</h3>
+          <p>Shared evidence ledger for compact commitments only.</p>
+        </div>
+      </div>
+
+      <h2>Pipeline</h2>
+      <div class="flow">
+        <span class="pill">File</span><span class="arrow">→</span>
+        <span class="pill">QEV encrypt</span><span class="arrow">→</span>
+        <span class="pill">SHA-256 digest</span><span class="arrow">→</span>
+        <span class="pill">Solana anchor</span><span class="arrow">→</span>
+        <span class="pill">Receipt</span>
+      </div>
+      <pre>digest = SHA-256( UTF-8( canonicalJSON( vault ) ) )</pre>
+
+      <h2>What goes on-chain</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Yes</h3>
+          <ul class="clean">
+            <li>Vault digest (32 bytes)</li>
+            <li>Schema hash</li>
+            <li>Issuer / controller</li>
+            <li>Active · revoked · superseded</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Never</h3>
+          <ul class="clean never">
+            <li>Plaintext</li>
+            <li>Passphrase</li>
+            <li>Keys</li>
+            <li>Sensitive labels</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>Status</h2>
+      <div class="card">
+        <div class="kv">
+          <span>Product</span><span>QAL v0.1.2 pre-alpha</span>
+          <span>Repo</span
+          ><span
+            ><a href="https://github.com/TheArtOfSound/qev-anchor-layer"
+              >TheArtOfSound/qev-anchor-layer</a
+            ></span
+          >
+          <span>Program ID</span
+          ><span>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</span>
+          <span>Devnet deploy</span
+          ><span>Not finalized (public RPC deploy incomplete)</span>
+          <span>Token</span><span>None</span>
+        </div>
+      </div>
+
+      <p class="lead" style="margin-top: 1.25rem">
+        A matching digest proves:
+        <em>“This exact encrypted envelope matches what was committed.”</em>
+        It does not prove real-world authorship or that the plaintext is true.
+      </p>
+
+      <footer>
+        QAL · QEV Anchor Layer ·
+        <a href="/security/">Security</a> ·
+        <a href="/evidence/devnet/">Evidence</a> · MIT
+      </footer>
+    </div>
+  </body>
+</html>

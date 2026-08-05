@@ -1,0 +1,15 @@
+{
+  "name": "@qira/qal-site",
+  "version": "0.1.2",
+  "private": true,
+  "description": "Public static site for QAL (pre-alpha)",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "npx --yes serve -l 4321 .",
+    "typecheck": "echo 'static site'",
+    "lint": "echo 'static site'"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "1.98.4"
+  }
+}
