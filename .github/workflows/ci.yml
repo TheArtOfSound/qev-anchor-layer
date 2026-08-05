@@ -55,8 +55,9 @@ jobs:
       - name: cargo fmt
         run: cargo fmt --all -- --check
 
-      - name: cargo clippy (host)
-        run: cargo clippy -p qal-anchor --all-targets -- -D warnings
+      # --lib only: integration tests include_bytes the SBF .so which does not exist yet.
+      - name: cargo clippy (host lib)
+        run: cargo clippy -p qal-anchor --lib -- -D warnings
 
       - name: Install Solana CLI + platform tools (stable)
         run: |
