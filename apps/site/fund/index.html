@@ -8,36 +8,52 @@
       name="description"
       content="Support QAL with SOL. Live progress toward the next public milestone. Receive-only wallet."
     />
-    <link rel="stylesheet" href="/assets/site.css" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
-      <nav class="app-nav">
+      <nav class="app-nav" aria-label="Primary">
         <a href="/">Play</a>
-        <a href="/studio/">Make</a>
-        <a href="/verify/">Check</a>
-        <a href="/devs/">Build</a>
+      <div class="nav-group">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub">
-        <a href="/memecoins/">Why</a>
-        <a href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund active" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund active" href="/fund/">Fund</a>
     </header>
     <div class="wrap">
 
-      <h1>Help us finish the public version.</h1>
+      <p class="crumb">Fund</p>
+      <h1>Help us take this past the test network.</h1>
       <p class="one-liner">
-        One goal. One wallet that only receives. Progress below.
+        The Devnet stamp already exists — see
+        <a href="/evidence/devnet/">live proof</a> first. This wallet is
+        optional support for review and a careful next step. Not a token.
+        Not audited. Not finished.
       </p>
 
       <section class="fund-card fund-in" aria-label="Funding progress">
-        <h3>Next step: a public version you can try</h3>
+        <h3>Next step: review, then a wider release</h3>
         <p class="fund-why">
-          A careful release people can run and check themselves — not a
-          hype page. Goal is <strong><span data-fund-goal>25</span> SOL</strong>.
+          Grant wallet is receive-only.
+          People can already check the public stamp —
+          <a href="/evidence/devnet/">open the proof</a>.
+          Goal is <strong><span data-fund-goal>25</span> SOL</strong>.
         </p>
         <div class="fund-meta">
           <strong data-fund-status>Loading balance…</strong>
@@ -72,8 +88,9 @@
 
       <h2>Later: paying to post, never to check</h2>
       <p class="short">
-        Checking a public claim stays free. Posting a new public claim may
-        cost a little once the real network is live. Today this wallet is
+        Checking a public claim stays free. The official stamp is already
+        live on Devnet. A later paid post, if we ever ship one, is for a
+        wider release — not to “turn the program on.” Today this wallet is
         <strong>optional support</strong> — not a purchase.
       </p>
       <p class="note">
@@ -83,10 +100,10 @@
 
       <h2>What your support pays for</h2>
       <ul class="checks">
-        <li>A public test people can actually check</li>
-        <li>The real locker, not just this practice page</li>
+        <li>Review, then a careful wider release</li>
+        <li>The official locker — Studio is practice, not a vault</li>
         <li>Clear writing and honest evidence</li>
-        <li>A careful review before calling it done</li>
+        <li>Hosting, and a public check that stays free</li>
       </ul>
 
       <h2>Simple rules</h2>
@@ -94,7 +111,8 @@
         <li>No token. No share of the company.</li>
         <li>Not a contract — you can send or not</li>
         <li>Never send a seed phrase. Ever.</li>
-        <li>This wallet cannot upgrade the program</li>
+        <li>This wallet only receives. It cannot upgrade the program.</li>
+        <li>Not audited. Not finished.</li>
       </ul>
 
       <div class="note">
@@ -103,16 +121,35 @@
       </div>
 
       <div class="actions">
-        <a class="primary" href="/studio/">Lock a claim</a>
+        <a class="primary" href="/evidence/devnet/">See the live proof</a>
+        <a class="secondary" href="/studio/">Practice a lock</a>
         <a class="secondary" href="/">Play the game</a>
-        <a class="secondary" href="/memecoins/">Why this matters</a>
       </div>
 
-      <footer>
-        <a href="/">Home</a> ·
-        <a href="/security/">Limits</a>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
       </footer>
     </div>
-    <script src="/assets/site.js" defer></script>
+    <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>

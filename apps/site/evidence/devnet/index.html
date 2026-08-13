@@ -3,48 +3,252 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Evidence — QAL</title>
-    <link rel="stylesheet" href="/assets/site.css" />
+    <title>Proof — QAL on Solana Devnet</title>
+    <meta
+      name="description"
+      content="Live official stamp on Devnet: File A stamped then taken back; File B is a separate replace. Public Explorer links."
+    />
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
-  <body>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/">QAL</a>
-        <a href="/">Start here</a>
-        <a href="/verify/">Check</a>
-        <a href="/memecoins/">Memecoins</a>
-        <a href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
-
-      <h1>Devnet evidence</h1>
-      <p class="lede">
-        This page will list public transactions once a clean deploy finishes.
-        Nothing to show yet.
-      </p>
-
-      <div class="warn">
-        Program not live on public Devnet from this effort. Uploads hit rate
-        limits and burned test SOL. No fake “success” screenshots.
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav" aria-label="Primary">
+        <a href="/">Play</a>
+      <div class="nav-group is-on">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
       </div>
+      <div class="nav-group">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
+      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
+    </header>
+    <div class="wrap wrap-wide">
+      <div data-proof>
+        <p class="crumb"><a href="/studio/">Product</a> / Live proof</p>
+        <h1>Proof you can open</h1>
+        <p class="lede">
+          These are public Devnet transactions — a live official stamp on
+          Devnet, then a take-back, plus a separate replace of a different
+          file. This page asks Solana if the program account is still there.
+          You can ignore our words and click Explorer.
+        </p>
 
-      <ul class="plain">
-        <li>
-          <span>Program</span>
-          6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR
-        </li>
-        <li><span>On-chain</span> not found</li>
-      </ul>
+        <p>
+          <span data-proof-pill class="status-pill">Official stamp on Devnet</span>
+        </p>
+        <p class="ok" data-proof-live hidden>
+          Program account exists on Devnet · slot
+          <span data-proof-slot>—</span>
+        </p>
+        <p class="warn" data-proof-down hidden>
+          Could not refresh Devnet status (network). Signatures below still
+          open in Explorer.
+        </p>
 
-      <p class="note">
-        When ready, non-secret files go in
-        <code>evidence/devnet/v0.1.2/</code> in the repo and get linked here.
-      </p>
+        <div class="warn">
+          Experimental. Not audited. Test network only. A liar can still
+          lock a lie. The grant wallet did not deploy this.
+        </div>
 
-      <footer>
-        <a href="/">Home</a>
+        <h2>Put the program on Devnet</h2>
+        <p>
+          <a
+            data-href-deploy
+            href="https://explorer.solana.com/tx/2G4pDhJ8b1ZWFjNzUcorMGTbKpVTqhk6Yqa6R3srBwkT3K4qnYWUc5Sa32HzyL8DpTo6oPW4eG54pQz9opSHKrkt?cluster=devnet"
+            >Open deploy transaction</a
+          >
+          ·
+          <a
+            data-href-program
+            href="https://explorer.solana.com/address/6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR?cluster=devnet"
+            >Open the program account</a
+          >
+        </p>
+
+        <h2>File A — stamped, then taken back</h2>
+        <p>
+          A live official stamp on Devnet. Only the fingerprint was posted.
+          Later the stamp was taken back. Status is revoked. This is not
+          File B.
+        </p>
+        <ol class="steps">
+          <li>
+            <strong>Posted the fingerprint</strong>
+            <p>
+              Stamp
+              <span data-proof-anchor-ok></span>
+              <a
+                data-href-anchor
+                data-href-file-a-stamp
+                href="https://explorer.solana.com/tx/59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY?cluster=devnet"
+                >Open stamp transaction</a
+              >
+              ·
+              <a
+                data-href-pda
+                data-href-file-a-pda
+                href="https://explorer.solana.com/address/5yhfcBtHWwtDt6P23rdgHXosC6p8kv2YSjWjpSp6Rqma?cluster=devnet"
+                >Open the on-chain record</a
+              >
+            </p>
+          </li>
+          <li>
+            <strong>A changed copy no longer matches</strong>
+            <p>
+              That check ran in our test on the first stamp. It is not a
+              separate public transaction.
+            </p>
+          </li>
+          <li>
+            <strong>Took the stamp back</strong>
+            <p>
+              Fingerprint still matches. Status is taken back
+              <span class="status-pill st-revoked" data-proof-status-a>Revoked</span>.
+              <a
+                data-href-revoke
+                data-href-file-a-revoke
+                href="https://explorer.solana.com/tx/4RPtdtFGczEqeaehsf98ZF51XNq7qNCv98qUjk2eTkALFDp4nYs3XY1nbCbAaxQ2qH15wdEhEUKPtaxiCxsn5Z81?cluster=devnet"
+                >Open take-back transaction</a
+              >
+            </p>
+          </li>
+        </ol>
+
+        <h2>File B — a separate replace</h2>
+        <p>
+          Not File A. Replace is a different vault pair: old marked
+          replaced, new one live. Do not read the take-back and the replace
+          as one file.
+        </p>
+        <p>
+          <a
+            data-href-supersede
+            data-href-file-b-supersede
+            href="https://explorer.solana.com/tx/NzVJ8A37EzprcLV7x2X4QyXPdFeUdqqJnhPUKwM5ogUMW8iqhG2kjksyH7Q75sN1YPACAJb7b4gvVaZLErLba3C?cluster=devnet"
+            >Open replace transaction</a
+          >
+          ·
+          <a
+            data-href-file-b-pda
+            href="https://explorer.solana.com/address/qmusbkdkbVwNRsqtNzBE9xM2F48M6LRKe83hx1LtpWG?cluster=devnet"
+            >Open the new on-chain record</a
+          >
+        </p>
+
+        <h2>Copy these yourself</h2>
+        <div class="studio-kv">
+          <div>
+            <span>Program</span>
+            <code class="break" data-proof-program>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</code>
+          </div>
+          <div>
+            <span>File A fingerprint (revoked)</span>
+            <code class="break" data-proof-fp data-proof-fp-a>2379d8e35bfd5fcba022eee231704e2b2e7383efe8260b191b82bcdc952928a0</code>
+          </div>
+          <div>
+            <span>File B fingerprint (replace)</span>
+            <code class="break" data-proof-fp-b>e0a65a2651275557350deac05165db56202e9dc706554877f69cceabecab1b32</code>
+          </div>
+          <div>
+            <span>File B parent fingerprint</span>
+            <code class="break" data-proof-parent-b>33dd56ed1c31fa3f4500a064f61c6f8c184d620be3d7ac8b76338cc850f1afd5</code>
+          </div>
+          <div>
+            <span>Hosted demo fingerprint (Check this one)</span>
+            <code class="break" data-proof-fp-demo>052699c297bae3818b896134bccab662f38f9f9fe72a8be83a69a00f702802c0</code>
+          </div>
+          <div>
+            <span>Who deployed it</span>
+            <code class="break" data-proof-issuer>3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz</code>
+          </div>
+        </div>
+
+        <h2>Hosted demo — a later official file you can Check</h2>
+        <p>
+          File A and File B locker bytes were not saved. This is a
+          <strong>new</strong> official vault stamped on the same program
+          so anyone can finish Check. It is not File A.
+        </p>
+        <p>
+          Fingerprint
+          <code class="break" data-proof-fp-demo>052699c297bae3818b896134bccab662f38f9f9fe72a8be83a69a00f702802c0</code>
+        </p>
+        <p>
+          <a class="btn-primary" href="/verify/">Check the hosted demo file</a>
+          ·
+          <a
+            data-href-demo-stamp
+            href="https://explorer.solana.com/tx/23cWp8og9tkHFDfx78S2ypjbXrC7UbNfBJWdhHjcae72u3JajhURcpjYQXpBXNyGmW5oi39vBF1wzfk4e3VEyJob?cluster=devnet"
+            >Open demo stamp</a
+          >
+          ·
+          <a
+            data-href-demo-pda
+            href="https://explorer.solana.com/address/93RsNqWKFPTr6BU8osEWAiuXG315LEhX6tr5Dz27jLND?cluster=devnet"
+            >Open demo record</a
+          >
+          ·
+          <a href="/evidence/devnet/vault.json">vault.json</a>
+          ·
+          <a href="/evidence/devnet/demo-receipt.json">demo proof slip</a>
+        </p>
+
+        <div class="warn" data-proof-check-note>
+          File A and File B locker bytes were not saved. A later hosted
+          demo vault is published so you can Check one official file.
+          That demo is not File A.
+        </div>
+        <p class="short">
+          <a
+            data-href-anchor
+            href="https://explorer.solana.com/tx/59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY?cluster=devnet"
+            >Open File A stamp on Explorer</a
+          >
+          · <a href="/evidence/devnet/proof.json">proof.json</a>
+          · <a href="/evidence/devnet/anchor-receipt.json">File A proof slip</a>
+          · <a href="/studio/">Practice in Studio</a>
+          · <a href="/">Play the idea</a>
+        </p>
+      </div>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
       </footer>
     </div>
+    <script src="/assets/proof.js?v=20260813c" defer></script>
+      <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>

@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QAL — lock it, prove it, catch a fake</title>
+    <title>They swapped the PDF. The fingerprint didn’t. — QAL</title>
     <meta
       name="description"
-      content="A 2-minute game: lock a promise on your computer, post only a fingerprint, catch a website that swapped the file."
+      content="Not a token list. Memecoin sites can edit the promise overnight. Lock the real file on your computer, post only a fingerprint, catch the swap. 2 minutes. No wallet. No token."
     />
-    <meta property="og:title" content="QAL — lock it, prove it, catch a fake" />
+    <meta property="og:title" content="They swapped the PDF. The fingerprint didn’t." />
     <meta
       property="og:description"
-      content="Websites can change. A fingerprint cannot. Two minutes. No wallet."
+      content="Not a token list. A 2-minute game that shows why “trust the website” fails. No wallet. No token. Live on Solana Devnet."
     />
     <meta property="og:url" content="https://bestmemecoins.app/" />
     <meta property="og:type" content="website" />
@@ -19,10 +19,10 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="QAL — play to learn" />
+    <meta name="twitter:title" content="They swapped the PDF. The fingerprint didn’t." />
     <meta
       name="twitter:description"
-      content="Seal something. Prove it. Catch a fake. ~2 minutes — you click, it teaches."
+      content="Not a token list. 2-minute game. No wallet. No token. Catch a fake website."
     />
     <meta name="twitter:image" content="https://bestmemecoins.app/og.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -32,26 +32,51 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/site.css?v=5" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app home">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
       <nav class="app-nav" aria-label="Primary">
         <a class="active" href="/">Play</a>
-        <a href="/studio/">Make</a>
-        <a href="/verify/">Check</a>
-        <a href="/devs/">Build</a>
+      <div class="nav-group">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub" aria-label="More">
-        <a href="/memecoins/">Why</a>
-        <a href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
     </header>
 
     <main class="app-main">
+      <div class="hit">
+        <h1>They swapped the PDF. The fingerprint didn’t.</h1>
+        <p>
+          Teams put promises on a website they can edit. You lock the real
+          file on your computer and post only a tiny fingerprint. Anyone
+          can check. A site can lie. The match cannot.
+        </p>
+        <div class="hit-chips">
+          <span>Not a token list</span>
+          <span>No wallet</span>
+          <span>~2 minutes</span>
+          <a href="/evidence/devnet/">Live proof on Devnet</a>
+        </div>
+      </div>
+
       <!-- 3D stage + controls side by side so the next click is never off-screen -->
       <section
         class="workspace play"
@@ -62,7 +87,7 @@
           <canvas id="hero-canvas" aria-hidden="true"></canvas>
           <div class="theater-glow"></div>
           <p class="theater-caption" data-caption>
-            Lock a promise. Catch a fake website.
+            They swapped the PDF. Catch it.
           </p>
           <button type="button" class="theater-start" data-start-overlay>
             Play — 2 minutes →
@@ -78,7 +103,7 @@
             <div class="pipe-beam" aria-hidden="true"><i></i></div>
             <div class="pipe-node" data-pipe="1">
               <span class="pipe-icon" aria-hidden="true">⛓️</span>
-              <span class="pipe-label">Stamp</span>
+              <span class="pipe-label">Fingerprint</span>
             </div>
             <div class="pipe-beam" aria-hidden="true"><i></i></div>
             <div class="pipe-node" data-pipe="2">
@@ -103,17 +128,117 @@
       </section>
 
       <div class="below">
+      <section class="breath reveal">
+        <h2>The whole idea</h2>
+        <p class="short breath-hint">Tap a card to replay it on the stage.</p>
+        <div class="breath-cards">
+          <button type="button" class="breath-card" data-breath="0">
+            <div class="breath-num">1</div>
+            <div class="breath-ico" aria-hidden="true">🔐</div>
+            <p>Lock the real file on your computer</p>
+          </button>
+          <button type="button" class="breath-card" data-breath="1">
+            <div class="breath-num">2</div>
+            <div class="breath-ico" aria-hidden="true">⛓️</div>
+            <p>Post only a tiny fingerprint — not the words</p>
+          </button>
+          <button type="button" class="breath-card" data-breath="2">
+            <div class="breath-num">3</div>
+            <div class="breath-ico" aria-hidden="true">🔍</div>
+            <p>Anyone can check later. A website can lie. The match cannot.</p>
+          </button>
+        </div>
+      </section>
+
       <p class="short play-note">
-        This game stays in your browser. No wallet. The real locker lives on
-        your computer. The public fingerprint is meant for Solana later.
+        The game is a demo in this tab. Studio is practice — nothing is
+        posted. The stamp below is the official proof on Solana’s test
+        network. This site is not a token list.
       </p>
 
-      <div class="play-cta-row">
-        <a class="btn-primary" href="/studio/new/">Lock a real claim</a>
-        <a class="secondary" href="/devs/">For builders</a>
-        <a class="secondary" href="/verify/">Check a file</a>
-        <a class="btn-fund" href="/fund/">Help build it →</a>
+      <section class="proof-card" data-proof aria-label="Live Devnet proof">
+        <div class="proof-head">
+          <span data-proof-pill class="status-pill">Official stamp on Devnet</span>
+          <h2>This is not a screenshot</h2>
+        </div>
+        <p class="proof-lede">
+          We locked a file and posted only its fingerprint. Then we
+          took that stamp back. A later replace used a different
+          file pair — not the same file put back. Those are public
+          Devnet transactions. This page asks Devnet if the program
+          is still there.
+        </p>
+        <p class="ok" data-proof-live hidden>
+          Program is on Devnet now
+          <span class="hint">slot <span data-proof-slot>—</span></span>
+        </p>
+        <p class="warn" data-proof-down hidden>
+          Could not reach a public Devnet server from this browser. The
+          explorer links still work.
+        </p>
+        <dl class="proof-kv">
+          <div>
+            <dt>Program</dt>
+            <dd><code data-proof-program-short>6cN9gD8L…TNvnR</code></dd>
+          </div>
+          <div>
+            <dt>Fingerprint we posted</dt>
+            <dd><code data-proof-fp-short>2379d8e3…2928a0</code> · taken back</dd>
+          </div>
+        </dl>
+        <div class="play-cta-row">
+          <a
+            class="btn-primary"
+            data-href-anchor
+            href="https://explorer.solana.com/tx/59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY?cluster=devnet"
+            >Open the stamp on Explorer</a
+          >
+          <a class="secondary" href="/evidence/devnet/">All four transactions</a>
+          <a
+            class="secondary"
+            data-href-program
+            href="https://explorer.solana.com/address/6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR?cluster=devnet"
+            >Program account</a
+          >
+        </div>
+        <p class="play-hint">
+          Test network. Not audited. A liar can still lock a lie.
+          File A was taken back. A later hosted demo file is what Check
+          can open — not File A.
+          <a href="/verify/">Check the hosted demo</a>
+        </p>
+      </section>
+
+      <h2>Where to go next</h2>
+      <div class="go-grid">
+        <a class="go-card" href="/studio/">
+          <strong>Make</strong>
+          <span>Studio practice. Stays on this computer. Not posted.</span>
+        </a>
+        <a class="go-card" href="/verify/">
+          <strong>Check</strong>
+          <span>Drop an official file, or run the hosted demo in one click.</span>
+        </a>
+        <a class="go-card" href="/evidence/devnet/">
+          <strong>Proof</strong>
+          <span>Live Devnet. Four public transactions you can open.</span>
+        </a>
+        <a class="go-card" href="/learn/">
+          <strong>Learn</strong>
+          <span>Why, how it works, what we don’t promise.</span>
+        </a>
       </div>
+
+      <section class="nope-section reveal">
+        <h2>What this is not</h2>
+        <ul class="nope">
+          <li>Not a token list</li>
+          <li>Not a way to pick a “safe” coin</li>
+          <li>Not putting your secrets on the internet</li>
+          <li>Not a new token</li>
+          <li>Not finished. Not reviewed by auditors.</li>
+        </ul>
+      </section>
 
       <section class="fund-card reveal" aria-label="Funding progress">
         <h3>Help us finish the public version</h3>
@@ -122,7 +247,7 @@
           Optional. Not a share of the company. Not a coin.
         </p>
         <div class="fund-meta">
-          <strong data-fund-status>Loading…</strong>
+          <strong data-fund-status>Optional support</strong>
           <span
             ><span data-fund-pct>0</span>% of
             <span data-fund-goal>25</span> SOL</span
@@ -149,60 +274,34 @@
         </div>
       </section>
 
-      <section class="breath reveal">
-        <h2>The whole idea</h2>
-        <p class="short breath-hint">Tap a card to replay it on the stage.</p>
-        <div class="breath-cards">
-          <button type="button" class="breath-card" data-breath="0">
-            <div class="breath-num">1</div>
-            <div class="breath-ico" aria-hidden="true">🔐</div>
-            <p>Lock the real file on your computer</p>
-          </button>
-          <button type="button" class="breath-card" data-breath="1">
-            <div class="breath-num">2</div>
-            <div class="breath-ico" aria-hidden="true">⛓️</div>
-            <p>Post only a tiny fingerprint — not the words</p>
-          </button>
-          <button type="button" class="breath-card" data-breath="2">
-            <div class="breath-num">3</div>
-            <div class="breath-ico" aria-hidden="true">🔍</div>
-            <p>Anyone can check later. A website can lie. The match cannot.</p>
-          </button>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
         </div>
-      </section>
-
-      <section class="nope-section reveal">
-        <h2>What this is not</h2>
-        <ul class="nope">
-          <li>Not a way to pick a “safe” coin</li>
-          <li>Not putting your secrets on the internet</li>
-          <li>Not a new token</li>
-          <li>Not finished. Not reviewed by auditors.</li>
-        </ul>
-      </section>
-
-      <div class="fund-strip" aria-label="Support QAL">
-        <div class="row">
-          <p>
-            <strong>Help finish the next step</strong><br />
-            <span data-fund-status>…</span>
-          </p>
-          <a class="btn-fund" href="/fund/">Support →</a>
-        </div>
-        <div class="fund-track">
-          <div class="fund-fill" data-fund-fill></div>
-        </div>
-      </div>
-
-      <footer>
-        Early draft · open source ·
-        <a href="/security/">What we don’t promise</a> ·
-        <a href="/fund/">Fund</a>
       </footer>
       </div>
     </main>
-    <script src="/assets/site.js?v=5" defer></script>
-    <script src="/assets/play.js?v=5" defer></script>
-    <script type="module" src="/assets/hero-3d.js?v=5"></script>
+    <script src="/assets/site.js?v=20260813c" defer></script>
+    <script src="/assets/play.js?v=20260813d" defer></script>
+    <script src="/assets/proof.js?v=20260813c" defer></script>
+    <script type="module" src="/assets/hero-3d.js?v=20260813c"></script>
   </body>
 </html>

@@ -15,38 +15,65 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/site.css" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
-      <nav class="app-nav">
+      <nav class="app-nav" aria-label="Primary">
         <a href="/">Play</a>
-        <a href="/studio/">Make</a>
-        <a href="/verify/">Check</a>
-        <a class="active" href="/devs/">Build</a>
+      <div class="nav-group">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a class="active" href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub">
-        <a href="/memecoins/">Why</a>
-        <a href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
     </header>
     <div class="wrap wrap-wide">
 
-      <p class="theater-kicker">For builders</p>
+      <p class="crumb">Builders</p>
       <h1>Put this check in your own app</h1>
       <p class="lede">
-        Not “hash a file and forget it.” Lock an exact file, then check it,
-        replace it, take it back, and show the history. Those verbs already
-        exist in the protocol.
+        Not “hash a file and forget it.” Lock (local) → Fingerprint (public)
+        → Check (anyone). Then replace it, take it back, and show the
+        history. Those verbs already exist in the protocol. No token. No
+        wallet required to check.
       </p>
 
       <div class="warn">
-        Early. Test networks only. Not audited. Public Solana posting is
-        not live. Don’t ship this as real-world proof yet.
+        The official program is live on Solana’s test network.
+        <a href="/evidence/devnet/">See the four public transactions</a>.
+        Not audited. Don’t ship this as mainnet or legal proof.
+        A liar can still lock a lie. Studio is practice — not the official
+        QEV vault.
       </div>
+
+      <h2>Official program</h2>
+      <p class="short">
+        Official QAL program:
+        <code>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</code>
+      </p>
+      <p class="short">
+        Abandoned, compromised id — not official:
+        <code>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</code>
+      </p>
+      <p class="short">
+        QEV is the locker on your computer. QAL is the public stamp.
+      </p>
 
       <h2>The idea in code</h2>
 <pre>const commitment = await qal.commit({
@@ -93,11 +120,34 @@ qal supersede OLD_VAULT NEW_VAULT</pre>
 
       <h2>Try it without code</h2>
       <div class="play-cta-row">
-        <a class="btn-primary" href="/studio/new/">Lock a claim in the browser</a>
+        <a class="btn-primary" href="/studio/new/">Practice a lock in the browser</a>
         <a class="secondary" href="/">Play the game</a>
       </div>
 
-      <footer>Checking stays free. Posting in public may cost a little after the real network is live.</footer>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
+      </footer>
     </div>
+      <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>

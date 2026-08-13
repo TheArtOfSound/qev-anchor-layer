@@ -22,6 +22,7 @@ import * as THREE from "/assets/vendor/three.module.min.js";
     verify: function () {},
     celebrate: function () {},
     replay: function () {},
+    reset: function () {},
     onPick: function () {},
     setHot: function () {},
     setCaption: function () {},
@@ -336,8 +337,9 @@ import * as THREE from "/assets/vendor/three.module.min.js";
   );
   ledgerFace.position.set(0, 0, 0.1);
   ledger.add(ledgerFace);
-  ledger.userData.pick = "stamp:fp";
+  ledger.userData.pick = "ledger";
 
+  var ledgerTexIdle = ledgerFace.material.map;
   var ledgerTexLive = labelTex(["SOLANA", "status: active", "fp stamped"], {
     bg: "#102018",
     fg: "#d8e8df",
@@ -613,7 +615,9 @@ import * as THREE from "/assets/vendor/three.module.min.js";
     checkGroup.visible = true;
     scl(checkGroup, 1.12);
     go(shackle, 0, 0.58, 0);
+    lockGroup.userData.pick = "start";
     setCam("idle");
+    setHot(["start"]);
   }
 
   function layoutPick() {
@@ -803,7 +807,6 @@ import * as THREE from "/assets/vendor/three.module.min.js";
 
   function emitPick(name) {
     if (!name) return;
-    if (pickCb) pickCb(name);
     window.dispatchEvent(new CustomEvent("qal-pick", { detail: name }));
   }
 
@@ -895,6 +898,26 @@ import * as THREE from "/assets/vendor/three.module.min.js";
 
   api.celebrate = function () {
     applyPhase("celebrate");
+  };
+
+  api.reset = function () {
+    selectedDoc = null;
+    sealed = false;
+    stamped = false;
+    attacked = false;
+    lastGood = null;
+    lockGroup.userData.pick = "lock";
+    go(shackle, 0, 0.58, 0);
+    lockMat.emissiveIntensity = 0.08;
+    ledgerFace.material.map = ledgerTexIdle;
+    ledgerFace.material.needsUpdate = true;
+    siteFace.material.map = siteClean;
+    siteFace.material.needsUpdate = true;
+    scl(fakeVault, 1);
+    Object.keys(tokens).forEach(function (k) {
+      scl(tokens[k], 1);
+    });
+    applyPhase("idle");
   };
 
   api.replay = function (beat) {

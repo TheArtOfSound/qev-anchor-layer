@@ -4,9 +4,16 @@
 
   var STORE_KEY = "qal-studio-v1";
   var SCHEMA = "QAL-STUDIO-ENVELOPE-V1";
+  var OFFICIAL_SCHEMA = "BRY-NFET-SX-VAULT-V2";
   var PROTOCOL = "QAL";
   var PROTOCOL_VERSION = "0.1.2";
   var FREE_SOFT_CAP = 3;
+  var MSG_OFFICIAL =
+    "This is an official locker file. Studio is practice-only and will not treat it as a Studio job. Use Check to look it up.";
+  var MSG_RECEIPT = "This is a stamp receipt, not a locker. See live proof.";
+  var MSG_GARBAGE = "Could not import this file.";
+  var MSG_PRACTICE =
+    "This is practice. The official stamp is on the proof page. Check cannot accept this envelope.";
 
   function nowIso() {
     return new Date().toISOString();
@@ -333,16 +340,51 @@
       .slice(0, 48);
   }
 
+  function isReceiptOrProof(obj) {
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
+    if (obj.schema === OFFICIAL_SCHEMA) return false;
+    if (obj.vault && obj.vault.schema === OFFICIAL_SCHEMA) return false;
+    var hasProofTx = !!(obj.transaction_signature || obj.anchor_tx || obj.deploy_tx);
+    var hasProgram = typeof obj.program_id === "string" && obj.program_id;
+    var hasAnchor = !!(obj.anchor_address || obj.anchor);
+    var hasDigest = !!(obj.vault_digest || obj.fingerprint);
+    if (obj.protocol === "QAL" && (hasProofTx || hasProgram || hasAnchor)) return true;
+    if (obj.qev_schema && (hasProofTx || hasProgram || hasAnchor)) return true;
+    if (hasProgram && hasProofTx) return true;
+    if (hasProgram && hasDigest && (hasAnchor || obj.upgrade_authority)) return true;
+    return false;
+  }
+
+  function classifyImport(obj) {
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) return "garbage";
+    var schema = obj.schema;
+    var vaultSchema = obj.vault && obj.vault.schema;
+    if (schema === OFFICIAL_SCHEMA || vaultSchema === OFFICIAL_SCHEMA) return "official-vault";
+    if (isReceiptOrProof(obj)) return "receipt";
+    if (schema === SCHEMA || vaultSchema === SCHEMA) return "studio";
+    if (obj.vault && obj.vault_digest) return "studio";
+    return "garbage";
+  }
+
+  function importRefuse(kind) {
+    var msg = MSG_GARBAGE;
+    if (kind === "official-vault") msg = MSG_OFFICIAL;
+    else if (kind === "receipt") msg = MSG_RECEIPT;
+    var err = new Error(msg);
+    err.name = "ImportRefuse";
+    err.kind = kind;
+    return err;
+  }
+
   async function importPack(obj) {
-    if (!obj || typeof obj !== "object") throw new Error("Not a JSON object.");
+    var kind = classifyImport(obj);
+    if (kind !== "studio") throw importRefuse(kind);
     var item = obj;
-    if (obj.vault && obj.vault_digest) {
-      item = obj;
-    } else if (obj.schema === SCHEMA) {
+    if (obj.schema === SCHEMA && !(obj.vault && obj.vault_digest)) {
       var digest = await sha256Hex(canonicalJSON(obj));
       item = {
         id: uid(),
-        title: (obj.pack && obj.pack.title) || "Imported vault",
+        title: (obj.pack && obj.pack.title) || "Imported practice envelope",
         visibility: obj.mode === "public" ? "public" : "encrypted",
         status: "active",
         created_at: obj.created_at || nowIso(),
@@ -361,8 +403,14 @@
         kind: "import",
         events: [event("imported")],
       };
+    } else if (obj.vault && obj.vault_digest) {
+      item = obj;
+      item.kind = item.kind || "import";
+      item.issuer = item.issuer || "imported";
+      item.network = "studio-local";
+      item.anchor = "gated";
     } else {
-      throw new Error("This file is not a Studio envelope or record.");
+      throw importRefuse("garbage");
     }
     if (!item.id) item.id = uid();
     if (get(item.id)) item.id = uid();
@@ -371,7 +419,9 @@
 
   window.QALStudio = {
     SCHEMA: SCHEMA,
+    OFFICIAL_SCHEMA: OFFICIAL_SCHEMA,
     FREE_SOFT_CAP: FREE_SOFT_CAP,
+    classifyImport: classifyImport,
     list: list,
     get: get,
     create: create,
@@ -412,11 +462,49 @@
   }
 
   function statusLabel(st) {
-    if (st === "active") return "Live";
+    if (st === "active") return "Local";
     if (st === "revoked") return "Taken back";
     if (st === "superseded") return "Replaced";
     if (st === "disputed") return "Contested";
     return st || "—";
+  }
+
+  function issuerLabel(item) {
+    if (!item) return "—";
+    if (item.issuer === "studio-local") return "This browser (practice)";
+    if (item.issuer === "imported") return "Imported practice file";
+    return item.issuer || "This browser (practice)";
+  }
+
+  function showImportError(kind, message) {
+    var box = qs("[data-import-error]");
+    var msg = message || MSG_GARBAGE;
+    var html = escapeHtml(msg);
+    if (kind === "official-vault") {
+      html += ' <a href="/verify/">Open Check</a>';
+    } else if (kind === "receipt") {
+      html += ' <a href="/evidence/devnet/">See live proof</a>';
+    }
+    if (box) {
+      box.hidden = false;
+      box.innerHTML = html;
+    } else {
+      alert(msg);
+    }
+  }
+
+  function copyText(text, btn, doneLabel) {
+    if (!text) return;
+    function done() {
+      if (btn) btn.textContent = doneLabel || "Copied";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function () {
+        alert(text);
+      });
+    } else {
+      alert(text);
+    }
   }
 
   function fmtWhen(iso) {
@@ -449,46 +537,68 @@
         '<p class="short">Make one here. It stays in this browser until you download it.</p>' +
         '<a class="btn-primary" href="/studio/new/">Lock a claim</a>' +
         "</div>";
-      return;
+    } else {
+      host.innerHTML = items
+        .map(function (it) {
+          return (
+            '<a class="studio-row" href="/studio/c/?id=' +
+            encodeURIComponent(it.id) +
+            '">' +
+            '<span class="studio-row-title">' +
+            escapeHtml(it.title) +
+            "</span>" +
+            '<span class="status-pill ' +
+            statusClass(it.status) +
+            '">' +
+            escapeHtml(statusLabel(it.status)) +
+            "</span>" +
+            '<span class="studio-row-meta">' +
+            escapeHtml(shortHex(it.vault_digest)) +
+            " · " +
+            escapeHtml(fmtWhen(it.created_at)) +
+            "</span></a>"
+          );
+        })
+        .join("");
     }
-
-    host.innerHTML = items
-      .map(function (it) {
-        return (
-          '<a class="studio-row" href="/studio/c/?id=' +
-          encodeURIComponent(it.id) +
-          '">' +
-          '<span class="studio-row-title">' +
-          escapeHtml(it.title) +
-          "</span>" +
-          '<span class="status-pill ' +
-          statusClass(it.status) +
-          '">' +
-          escapeHtml(statusLabel(it.status)) +
-          "</span>" +
-          '<span class="studio-row-meta">' +
-          escapeHtml(shortHex(it.vault_digest)) +
-          " · " +
-          escapeHtml(fmtWhen(it.created_at)) +
-          "</span></a>"
-        );
-      })
-      .join("");
 
     var imp = qs("[data-import]");
     if (imp) {
       imp.addEventListener("change", function () {
         var file = imp.files && imp.files[0];
         if (!file) return;
+        var errBox = qs("[data-import-error]");
+        if (errBox) {
+          errBox.hidden = true;
+          errBox.textContent = "";
+        }
         var reader = new FileReader();
+        reader.onerror = function () {
+          showImportError("garbage", MSG_GARBAGE);
+        };
         reader.onload = function () {
           try {
-            var obj = JSON.parse(String(reader.result));
-            importPack(obj).then(function (item) {
-              location.href = "/studio/c/?id=" + encodeURIComponent(item.id);
-            });
+            var obj;
+            try {
+              obj = JSON.parse(String(reader.result));
+            } catch (parseErr) {
+              showImportError("garbage", MSG_GARBAGE);
+              return;
+            }
+            var kind = classifyImport(obj);
+            if (kind !== "studio") {
+              showImportError(kind, kind === "official-vault" ? MSG_OFFICIAL : kind === "receipt" ? MSG_RECEIPT : MSG_GARBAGE);
+              return;
+            }
+            Promise.resolve(importPack(obj))
+              .then(function (item) {
+                location.href = "/studio/c/?id=" + encodeURIComponent(item.id) + "&sealed=1";
+              })
+              .catch(function (err) {
+                showImportError((err && err.kind) || "garbage", (err && err.message) || MSG_GARBAGE);
+              });
           } catch (err) {
-            alert(err.message || "Could not import that file.");
+            showImportError((err && err.kind) || "garbage", (err && err.message) || MSG_GARBAGE);
           }
         };
         reader.readAsText(file);
@@ -625,7 +735,7 @@
 
       var filesInput = form.querySelector("[name=files]");
       var files = await readFiles(filesInput && filesInput.files);
-      setPipe(2);
+      setPipe(3);
 
       var item = await create({
         title: (form.querySelector("[name=title]") || {}).value,
@@ -640,18 +750,44 @@
       });
       setPipe(3);
       await wait(280);
-      setPipe(4);
-      await wait(180);
-      setPipe(5);
-      await wait(180);
       setPipe(6);
       await wait(180);
       setPipe(7);
-      await wait(160);
-      location.href = "/studio/c/?id=" + encodeURIComponent(item.id);
+      showCreateNext(item);
     } catch (err) {
       fail(err.message || String(err));
     }
+  }
+
+  function showCreateNext(item) {
+    var panel = qs("[data-create-next]");
+    if (!panel) {
+      location.href = "/studio/c/?id=" + encodeURIComponent(item.id) + "&sealed=1";
+      return;
+    }
+    panel.hidden = false;
+    var digestEl = qs("[data-create-digest]", panel);
+    if (digestEl) digestEl.textContent = item.vault_digest || "—";
+    var open = qs("[data-create-open]", panel);
+    if (open) open.href = "/studio/c/?id=" + encodeURIComponent(item.id) + "&sealed=1";
+    var dl = qs("[data-create-dl]", panel);
+    if (dl) {
+      dl.onclick = function () {
+        exportVault(item);
+      };
+    }
+    var copy = qs("[data-create-copy]", panel);
+    if (copy) {
+      if (!item.vault_digest) {
+        copy.hidden = true;
+      } else {
+        copy.hidden = false;
+        copy.onclick = function () {
+          copyText(item.vault_digest, copy, "Copied fingerprint");
+        };
+      }
+    }
+    panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
   function lineage(item) {
@@ -694,10 +830,9 @@
     pill.className = "status-pill " + statusClass(item.status);
 
     qs("[data-when]", root).textContent = fmtWhen(item.created_at);
-    qs("[data-issuer]", root).textContent = item.issuer;
+    qs("[data-issuer]", root).textContent = issuerLabel(item);
     qs("[data-digest]", root).textContent = item.vault_digest;
-    qs("[data-network]", root).textContent =
-      item.anchor === "gated" ? "On this computer · not posted publicly yet" : item.network;
+    qs("[data-network]", root).textContent = "On this computer · not posted (practice)";
     qs("[data-vis]", root).textContent =
       item.visibility === "public" ? "Words are readable" : "Words are locked";
 
@@ -766,16 +901,38 @@
       reopen(item.id);
       location.reload();
     });
-    qs("[data-dl-vault]", root).addEventListener("click", function () {
-      exportVault(item);
+    qsa("[data-dl-vault]", root).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        exportVault(item);
+        var note = qs("[data-export-note]", root);
+        if (note) {
+          note.hidden = false;
+          note.textContent = MSG_PRACTICE;
+        }
+      });
     });
-    qs("[data-dl-record]", root).addEventListener("click", function () {
-      exportRecord(item);
+    qsa("[data-dl-record]", root).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        exportRecord(item);
+        var note = qs("[data-export-note]", root);
+        if (note) {
+          note.hidden = false;
+          note.textContent = MSG_PRACTICE;
+        }
+      });
+    });
+    qsa("[data-copy-digest]", root).forEach(function (btn) {
+      if (!item.vault_digest) {
+        btn.hidden = true;
+        return;
+      }
+      btn.addEventListener("click", function () {
+        copyText(item.vault_digest, btn, "Copied fingerprint");
+      });
     });
     qs("[data-copy-link]", root).addEventListener("click", function () {
       var url = location.origin + "/studio/c/?id=" + encodeURIComponent(item.id);
-      if (navigator.clipboard) navigator.clipboard.writeText(url);
-      this.textContent = "Copied (this browser only)";
+      copyText(url, this, "Copied (this browser only)");
     });
 
     qs("[data-act-verify]", root).addEventListener("click", function () {

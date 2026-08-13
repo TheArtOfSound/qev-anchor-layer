@@ -1,0 +1,18 @@
+{
+  "protocol": "QAL",
+  "protocol_version": "0.1.2",
+  "network": "solana-devnet",
+  "genesis_hash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "program_id": "6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR",
+  "anchor_address": "qmusbkdkbVwNRsqtNzBE9xM2F48M6LRKe83hx1LtpWG",
+  "status_address": "FS3wbqMDYvtNE6Jr4HcyMDDW9w1bjiTAEp3wbr5WmRtt",
+  "issuer": "3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz",
+  "controller": "3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz",
+  "vault_digest": "e0a65a2651275557350deac05165db56202e9dc706554877f69cceabecab1b32",
+  "qev_schema": "BRY-NFET-SX-VAULT-V2",
+  "qev_schema_hash": "b4e2ee1d6604d8dae700dc408a69858f7be5a8c696439dd1fac8973244f3a48e",
+  "content_reference": null,
+  "parent_digest_claim": "33dd56ed1c31fa3f4500a064f61c6f8c184d620be3d7ac8b76338cc850f1afd5",
+  "transaction_signature": "NzVJ8A37EzprcLV7x2X4QyXPdFeUdqqJnhPUKwM5ogUMW8iqhG2kjksyH7Q75sN1YPACAJb7b4gvVaZLErLba3C",
+  "created_slot": 483578795
+}

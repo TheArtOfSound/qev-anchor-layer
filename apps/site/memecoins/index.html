@@ -3,36 +3,50 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Memecoins — QAL</title>
-    <link rel="stylesheet" href="/assets/site.css" />
+    <title>Why — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
-      <nav class="app-nav">
+      <nav class="app-nav" aria-label="Primary">
         <a href="/">Play</a>
-        <a href="/studio/">Make</a>
-        <a href="/verify/">Check</a>
-        <a href="/devs/">Build</a>
+      <div class="nav-group">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group is-on">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub">
-        <a class="active" href="/memecoins/">Why</a>
-        <a href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
     </header>
     <div class="wrap">
 
+      <p class="crumb"><a href="/learn/">Learn</a> / Why</p>
       <h1>Less “trust the website.” That’s it.</h1>
       <p class="lede">
         This does not make prices safer. It makes
         <em>statements</em> checkable — if a team actually uses it.
+        Lock (local) → Fingerprint (public) → Check (anyone).
+        No token. No wallet required to check.
       </p>
 
       <div class="warn">
         Nothing here makes a coin a good buy. Coins can still dump or vanish.
         This only answers: “is this file the same one they locked before?”
+        A liar can still lock a lie. Studio is practice — not an official vault.
       </div>
 
       <h2>What’s broken today</h2>
@@ -51,26 +65,27 @@
       <h2>What we add</h2>
       <ol class="steps">
         <li>
-          <strong>Lock the statement on a computer</strong>
+          <strong>Lock (local)</strong>
           <p>
-            The team locks the real file (letter, wallet list, terms). Other
-            people don’t see the words unless they have the phrase.
+            The team locks the real file on a computer (letter, wallet list,
+            terms). Other people don’t see the words unless they have the
+            phrase. Studio is practice — not that official vault.
           </p>
         </li>
         <li>
-          <strong>Post only a fingerprint</strong>
+          <strong>Fingerprint (public)</strong>
           <p>
-            Same day, they post a tiny code that means “this exact locked
-            file.” The community keeps the file + a proof slip. There is now
-            a public moment: this file, this time.
+            Same day, they post a tiny QAL stamp that means “this exact
+            locked file.” The community keeps the file + a proof slip. There
+            is now a public moment: this file, this time.
           </p>
         </li>
         <li>
-          <strong>Anyone can check later</strong>
+          <strong>Check (anyone)</strong>
           <p>
             Open the file → make the fingerprint again → compare. If the
             website swaps the PDF, the old file still either matches or it
-            doesn’t. You don’t need their server.
+            doesn’t. No token. No wallet. You don’t need their server.
           </p>
         </li>
         <li>
@@ -168,7 +183,15 @@
         QEV = locker on your computer.<br />
         QAL = public stamp + history for that locker.<br />
         Solana = shared place the stamp is written.<br />
-        You = the person who actually checks.
+        You = the person who actually checks. No wallet required.
+      </p>
+      <p class="short">
+        Official QAL program:
+        <code>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</code>
+      </p>
+      <p class="short">
+        Abandoned, compromised id — not official:
+        <code>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</code>
       </p>
       <p>
         The point is not “safe coin.” It’s
@@ -177,16 +200,36 @@
       </p>
 
       <div class="actions">
-        <a class="primary" href="/studio/new/">Lock a claim</a>
+        <a class="primary" href="/studio/new/">Practice a lock</a>
         <a class="secondary" href="/">Play the game</a>
         <a class="secondary" href="/fund/">Help build it</a>
         <a class="secondary" href="/verify/">Check a file</a>
       </div>
 
-      <footer>
-        Early · not audited · no token ·
-        <a href="/security/">what we don’t promise</a>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
       </footer>
     </div>
+      <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-# QAL Implementation Status (v0.1.2 pre-devnet hardening)
+# QAL Implementation Status (v0.1.2)
 
 ## Label
 
@@ -57,14 +57,25 @@ supersede_vault:
   second successor → error
 ```
 
-## Still incomplete before “devnet evidence complete”
+## Live Devnet (2026-08-13)
 
 | Item | Notes |
 |------|-------|
-| Green GitHub Actions on `main` | Must be confirmed after push |
-| Live devnet deploy | Not done — do not use grant wallet as authority |
+| Official program on Devnet | `6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR` |
+| Public site | https://bestmemecoins.app |
+| Evidence pack | `evidence/devnet/v0.1.2/` |
+| Hosted Check vault | `apps/site/evidence/devnet/vault.json` (later demo file, not File A) |
+| Grant wallet as authority | **Never** |
+
+## Still incomplete
+
+| Item | Notes |
+|------|-------|
+| Green GitHub Actions on `main` | Confirm after this push |
 | External audit | No |
 | Token | **None** |
+| Studio posting | Gated. Browser envelopes are not official QEV. |
+| Mainnet | Not supported. Do not deploy unaudited. |
 | Full browser QEV schema validation | Still simplified vs CLI/SDK |
 
 ## Grant wallet (receive only)

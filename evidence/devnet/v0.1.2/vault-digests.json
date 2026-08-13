@@ -1,0 +1,11 @@
+{
+  "primary_digest": "2379d8e35bfd5fcba022eee231704e2b2e7383efe8260b191b82bcdc952928a0",
+  "primary_anchor": "5yhfcBtHWwtDt6P23rdgHXosC6p8kv2YSjWjpSp6Rqma",
+  "primary_status": "AUyHpTYM6qR7vgzpjT2RjoNhYL1raEyFfv5VLmXdT793",
+  "primary_tx": "59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY",
+  "primary_final_status": "revoked",
+  "supersede_old_digest": "33dd56ed1c31fa3f4500a064f61c6f8c184d620be3d7ac8b76338cc850f1afd5",
+  "supersede_new_digest": "e0a65a2651275557350deac05165db56202e9dc706554877f69cceabecab1b32",
+  "supersede_tx": "NzVJ8A37EzprcLV7x2X4QyXPdFeUdqqJnhPUKwM5ogUMW8iqhG2kjksyH7Q75sN1YPACAJb7b4gvVaZLErLba3C",
+  "supersede_new_anchor": "qmusbkdkbVwNRsqtNzBE9xM2F48M6LRKe83hx1LtpWG"
+}

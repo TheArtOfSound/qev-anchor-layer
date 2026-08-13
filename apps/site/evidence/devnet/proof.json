@@ -1,0 +1,98 @@
+{
+  "schema": "qal-site-proof-v1",
+  "label": "experimental-devnet-not-production",
+  "network": "solana-devnet",
+  "explorer_cluster": "devnet",
+  "explorer_base": "https://explorer.solana.com",
+  "program_id": "6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR",
+  "upgrade_authority": "3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz",
+  "grant_wallet_not_authority": "8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe",
+  "deploy_tx": "2G4pDhJ8b1ZWFjNzUcorMGTbKpVTqhk6Yqa6R3srBwkT3K4qnYWUc5Sa32HzyL8DpTo6oPW4eG54pQz9opSHKrkt",
+  "vault_bytes_persisted": false,
+  "vault_json": null,
+  "check_from_proof": false,
+  "demo": {
+    "id": "file-c",
+    "label": "Hosted demo",
+    "story": "new_official_vault_for_check",
+    "note": "Not File A. Original A/B locker bytes were not saved. This later official vault was stamped so Check has bytes.",
+    "fingerprint": "052699c297bae3818b896134bccab662f38f9f9fe72a8be83a69a00f702802c0",
+    "final_status": "active",
+    "anchor": "93RsNqWKFPTr6BU8osEWAiuXG315LEhX6tr5Dz27jLND",
+    "status_address": "BFgfa3Dua8P1tKGqHrqmpYZCsVpGoLV2ppFexi1mKgRg",
+    "stamp_tx": "23cWp8og9tkHFDfx78S2ypjbXrC7UbNfBJWdhHjcae72u3JajhURcpjYQXpBXNyGmW5oi39vBF1wzfk4e3VEyJob",
+    "created_slot": 483586111,
+    "qev_schema": "BRY-NFET-SX-VAULT-V2",
+    "vault_bytes_persisted": true,
+    "vault_json": "/evidence/devnet/vault.json",
+    "receipt_json": "/evidence/devnet/demo-receipt.json",
+    "check_from_proof": true,
+    "explorer": {
+      "stamp": "https://explorer.solana.com/tx/23cWp8og9tkHFDfx78S2ypjbXrC7UbNfBJWdhHjcae72u3JajhURcpjYQXpBXNyGmW5oi39vBF1wzfk4e3VEyJob?cluster=devnet",
+      "pda": "https://explorer.solana.com/address/93RsNqWKFPTr6BU8osEWAiuXG315LEhX6tr5Dz27jLND?cluster=devnet"
+    }
+  },
+  "copy": {
+    "stamp": "live official stamp on Devnet",
+    "check_cta": "File A and File B locker bytes were not saved. A later hosted demo vault is published so you can Check one official file. That demo is not File A."
+  },
+  "explorer": {
+    "program": "https://explorer.solana.com/address/6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR?cluster=devnet",
+    "deploy": "https://explorer.solana.com/tx/2G4pDhJ8b1ZWFjNzUcorMGTbKpVTqhk6Yqa6R3srBwkT3K4qnYWUc5Sa32HzyL8DpTo6oPW4eG54pQz9opSHKrkt?cluster=devnet",
+    "stamp": "https://explorer.solana.com/tx/59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY?cluster=devnet",
+    "revoke": "https://explorer.solana.com/tx/4RPtdtFGczEqeaehsf98ZF51XNq7qNCv98qUjk2eTkALFDp4nYs3XY1nbCbAaxQ2qH15wdEhEUKPtaxiCxsn5Z81?cluster=devnet",
+    "supersede": "https://explorer.solana.com/tx/NzVJ8A37EzprcLV7x2X4QyXPdFeUdqqJnhPUKwM5ogUMW8iqhG2kjksyH7Q75sN1YPACAJb7b4gvVaZLErLba3C?cluster=devnet",
+    "pda": "https://explorer.solana.com/address/5yhfcBtHWwtDt6P23rdgHXosC6p8kv2YSjWjpSp6Rqma?cluster=devnet",
+    "pda_b": "https://explorer.solana.com/address/qmusbkdkbVwNRsqtNzBE9xM2F48M6LRKe83hx1LtpWG?cluster=devnet"
+  },
+  "files": [
+    {
+      "id": "file-a",
+      "label": "File A",
+      "story": "stamped_then_revoked",
+      "fingerprint": "2379d8e35bfd5fcba022eee231704e2b2e7383efe8260b191b82bcdc952928a0",
+      "final_status": "revoked",
+      "anchor": "5yhfcBtHWwtDt6P23rdgHXosC6p8kv2YSjWjpSp6Rqma",
+      "status_address": "AUyHpTYM6qR7vgzpjT2RjoNhYL1raEyFfv5VLmXdT793",
+      "stamp_tx": "59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY",
+      "revoke_tx": "4RPtdtFGczEqeaehsf98ZF51XNq7qNCv98qUjk2eTkALFDp4nYs3XY1nbCbAaxQ2qH15wdEhEUKPtaxiCxsn5Z81",
+      "created_slot": 483578774,
+      "qev_schema": "BRY-NFET-SX-VAULT-V2",
+      "parent_digest_claim": null,
+      "vault_bytes_persisted": false,
+      "explorer": {
+        "stamp": "https://explorer.solana.com/tx/59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY?cluster=devnet",
+        "revoke": "https://explorer.solana.com/tx/4RPtdtFGczEqeaehsf98ZF51XNq7qNCv98qUjk2eTkALFDp4nYs3XY1nbCbAaxQ2qH15wdEhEUKPtaxiCxsn5Z81?cluster=devnet",
+        "pda": "https://explorer.solana.com/address/5yhfcBtHWwtDt6P23rdgHXosC6p8kv2YSjWjpSp6Rqma?cluster=devnet"
+      }
+    },
+    {
+      "id": "file-b",
+      "label": "File B",
+      "story": "replace",
+      "note": "Different vault pair from File A. Do not merge revoke + supersede.",
+      "fingerprint": "e0a65a2651275557350deac05165db56202e9dc706554877f69cceabecab1b32",
+      "parent_fingerprint": "33dd56ed1c31fa3f4500a064f61c6f8c184d620be3d7ac8b76338cc850f1afd5",
+      "final_status": "active",
+      "old_status": "superseded",
+      "anchor": "qmusbkdkbVwNRsqtNzBE9xM2F48M6LRKe83hx1LtpWG",
+      "status_address": "FS3wbqMDYvtNE6Jr4HcyMDDW9w1bjiTAEp3wbr5WmRtt",
+      "supersede_tx": "NzVJ8A37EzprcLV7x2X4QyXPdFeUdqqJnhPUKwM5ogUMW8iqhG2kjksyH7Q75sN1YPACAJb7b4gvVaZLErLba3C",
+      "created_slot": 483578795,
+      "qev_schema": "BRY-NFET-SX-VAULT-V2",
+      "parent_digest_claim": "33dd56ed1c31fa3f4500a064f61c6f8c184d620be3d7ac8b76338cc850f1afd5",
+      "vault_bytes_persisted": false,
+      "explorer": {
+        "supersede": "https://explorer.solana.com/tx/NzVJ8A37EzprcLV7x2X4QyXPdFeUdqqJnhPUKwM5ogUMW8iqhG2kjksyH7Q75sN1YPACAJb7b4gvVaZLErLba3C?cluster=devnet",
+        "pda": "https://explorer.solana.com/address/qmusbkdkbVwNRsqtNzBE9xM2F48M6LRKe83hx1LtpWG?cluster=devnet"
+      }
+    }
+  ],
+  "anchor_tx": "59XbtbVffPcwvA4RbK8NppTrKGQJemY68xZQSBcGaMLMYuuGfWrgEk9FjrQELbA4qTMgvzFjurL5WFK5BhgTwzRY",
+  "revoke_tx": "4RPtdtFGczEqeaehsf98ZF51XNq7qNCv98qUjk2eTkALFDp4nYs3XY1nbCbAaxQ2qH15wdEhEUKPtaxiCxsn5Z81",
+  "supersede_tx": "NzVJ8A37EzprcLV7x2X4QyXPdFeUdqqJnhPUKwM5ogUMW8iqhG2kjksyH7Q75sN1YPACAJb7b4gvVaZLErLba3C",
+  "anchor": "5yhfcBtHWwtDt6P23rdgHXosC6p8kv2YSjWjpSp6Rqma",
+  "status": "AUyHpTYM6qR7vgzpjT2RjoNhYL1raEyFfv5VLmXdT793",
+  "fingerprint": "2379d8e35bfd5fcba022eee231704e2b2e7383efe8260b191b82bcdc952928a0",
+  "final_status": "revoked"
+}

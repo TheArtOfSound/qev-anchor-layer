@@ -5,19 +5,25 @@
   var root = document.getElementById("play");
   if (!root) return;
 
-  var state = {
-    step: 0,
-    score: 0,
-    content: null,
-    phrase: "",
-    vault: null,
-    fingerprint: null,
-    chain: null, // { fp, status }
-    finished: false,
-  };
+  var state = freshState();
 
-  var STEPS = 6;
+  var LEVELS = 6;
+  var SCREENS = 7;
   var pickHandler = null;
+
+  function freshState() {
+    return {
+      step: 0,
+      score: 0,
+      content: null,
+      phrase: "",
+      vault: null,
+      fingerprint: null,
+      chain: null,
+      finished: false,
+      scored: {},
+    };
+  }
 
   function scene() {
     return window.QALScene || null;
@@ -56,8 +62,6 @@
 
   function setPick(fn) {
     pickHandler = fn;
-    var s = scene();
-    if (s && s.onPick) s.onPick(fn);
   }
 
   function hideStartOverlay() {
@@ -72,9 +76,14 @@
     root.classList.remove("playing");
   }
 
+  function beginPlay() {
+    if (state.step !== 0 || state.finished) return;
+    hideStartOverlay();
+    state.step = 1;
+    render();
+  }
+
   window.addEventListener("qal-scene-ready", function () {
-    var s = scene();
-    if (s && s.onPick) s.onPick(onScenePick);
     syncScene();
   });
   window.addEventListener("qal-pick", function (e) {
@@ -83,11 +92,7 @@
 
   var startOv = root.querySelector("[data-start-overlay]");
   if (startOv) {
-    startOv.addEventListener("click", function () {
-      hideStartOverlay();
-      state.step = 1;
-      render();
-    });
+    startOv.addEventListener("click", beginPlay);
   }
 
   function el(tag, cls, text) {
@@ -129,6 +134,14 @@
     if (why) toast("+" + n + " · " + why, "ok");
   }
 
+  function scoreOnce(key, n, why) {
+    if (!state.scored) state.scored = {};
+    if (state.scored[key]) return false;
+    state.scored[key] = true;
+    scoreAdd(n, why);
+    return true;
+  }
+
   function toast(msg, kind) {
     var t = root.querySelector("[data-toast]");
     if (!t) return;
@@ -143,27 +156,52 @@
   function setProgress() {
     var fill = root.querySelector("[data-play-fill]");
     var label = root.querySelector("[data-play-level]");
-    var pct = Math.round((state.step / STEPS) * 100);
-    if (fill) fill.style.width = pct + "%";
-    if (label) {
-      label.textContent =
-        state.step >= STEPS ? "Done" : "Level " + (state.step + 1) + " / " + STEPS;
+    if (state.finished) {
+      if (fill) fill.style.width = "100%";
+      if (label) label.textContent = "Done";
+      return;
     }
+    var level = state.step < 1 ? 1 : Math.min(state.step, LEVELS);
+    var pct = Math.round((state.step / SCREENS) * 100);
+    if (fill) fill.style.width = pct + "%";
+    if (label) label.textContent = "Level " + level + " / " + LEVELS;
   }
 
   function stageShell(title, blurb) {
     var stage = root.querySelector("[data-stage]");
+    var body = el("div", "play-body");
+    var actions = el("div", "play-actions");
+    if (!stage) return { body: body, actions: actions, stage: null };
     clear(stage);
     stage.className = "play-stage in";
     var h = el("h3", "play-title", title);
     var p = el("p", "play-blurb", blurb);
     stage.appendChild(h);
     stage.appendChild(p);
-    var body = el("div", "play-body");
     stage.appendChild(body);
-    var actions = el("div", "play-actions");
     stage.appendChild(actions);
     return { body: body, actions: actions, stage: stage };
+  }
+
+  function paintChain(node, live) {
+    if (!node) return;
+    if (live && state.chain) {
+      node.className = "play-chain live";
+      node.innerHTML =
+        '<div class="chain-title">Public record (demo)</div>' +
+        '<div class="chain-row">status: <strong class="ok-t">' +
+        escapeHtml(state.chain.status) +
+        "</strong></div>" +
+        '<div class="chain-row">fp: <code>' +
+        shortFp(state.chain.fp) +
+        "</code></div>";
+    } else {
+      node.className = "play-chain idle";
+      node.innerHTML =
+        '<div class="chain-title">Public record (demo)</div>' +
+        '<div class="chain-row">status: <em>empty</em></div>' +
+        '<div class="chain-row">fp: <code>—</code></div>';
+    }
   }
 
   function btn(label, cls, onClick) {
@@ -182,7 +220,6 @@
       });
       if (good) {
         b.classList.add("good");
-        scoreAdd(10, "nice");
         setTimeout(onPick, 450);
       } else {
         b.classList.add("bad");
@@ -202,28 +239,18 @@
 
   function level0() {
     showStartOverlay();
-    caption("Lock a promise. Catch a fake website.");
+    caption("They swapped the PDF. Catch it.");
     setPick(function (name) {
-      if (name === "start" || name === "lock") {
-        hideStartOverlay();
-        state.step = 1;
-        render();
-      }
+      if (name === "start" || name === "lock") beginPlay();
     });
-    var ui = stageShell(
-      "Try it yourself",
-      "Lock a promise. Post only a fingerprint. Catch a site that swapped the file."
-    );
-    ui.actions.appendChild(
-      btn("Start", "primary", function () {
-        hideStartOverlay();
-        state.step = 1;
-        render();
-      })
+    stageShell(
+      "Catch the swapped file",
+      "Tap Play on the stage. Lock a promise here. Post only a fingerprint. See why the website can lie."
     );
   }
 
   function pickContent(p) {
+    if (state.step !== 1) return;
     state.content = {
       id: p.id,
       label: p.label,
@@ -236,7 +263,7 @@
     };
     var s = scene();
     if (s && s.selectDoc) s.selectDoc(p.id);
-    scoreAdd(10, "sealed choice");
+    scoreOnce("pick", 10, "sealed choice");
     state.step = 2;
     render();
   }
@@ -339,7 +366,7 @@
       animateCipher(c, state.vault, function () {
         preview.classList.remove("scrambling");
         preview.classList.add("sealed");
-        scoreAdd(15, "locked offline");
+        scoreOnce("lock", 15, "locked offline");
       });
     }
 
@@ -399,6 +426,12 @@
     ui.body.appendChild(board);
 
     var hashing = false;
+    var nextBtn = btn("Continue →", "primary", function () {
+      if (!state.fingerprint) return;
+      state.step = 4;
+      render();
+    });
+    nextBtn.disabled = true;
     async function doHash() {
       if (hashing) return;
       hashing = true;
@@ -407,18 +440,17 @@
       state.fingerprint = fp;
       var node = board.querySelector("[data-f]");
       await typeOut(node, fp);
-      caption("Fingerprint ready. Only this tiny code is meant to be public.");
-      scoreAdd(15, "fingerprint ready");
-      setTimeout(function () {
-        state.step = 4;
-        render();
-      }, 600);
+      caption("Fingerprint ready. Press Continue.");
+      scoreOnce("hash", 15, "fingerprint ready");
+      nextBtn.disabled = false;
+      nextBtn.classList.add("ready");
     }
     setPick(function (name) {
       if (name === "lock") doHash();
     });
     var go = btn("Make the fingerprint", "primary", doHash);
     ui.actions.appendChild(go);
+    ui.actions.appendChild(nextBtn);
   }
 
   function typeOut(node, text) {
@@ -465,19 +497,27 @@
       },
     ];
     var stampedOnce = false;
+    var nextBtn = btn("Continue →", "primary", function () {
+      if (!state.chain) return;
+      state.step = 5;
+      render();
+    });
+    nextBtn.disabled = true;
+    var chain = el("div", "play-chain idle");
+    paintChain(chain, false);
     function pickStamp(opt) {
+      if (!opt || !opt.good) return;
       if (stampedOnce) return;
       stampedOnce = true;
       state.chain = { fp: state.fingerprint, status: "active" };
       var s = scene();
       if (s && s.stamp) s.stamp();
       toast(opt.why, "ok");
-      scoreAdd(20, "posted");
-      caption("Posted. The public record holds a fingerprint — not the file.");
-      setTimeout(function () {
-        state.step = 5;
-        render();
-      }, 700);
+      scoreOnce("stamp", 20, "posted");
+      caption("Demo record holds a fingerprint — not the file. Press Continue.");
+      paintChain(chain, true);
+      nextBtn.disabled = false;
+      nextBtn.classList.add("ready");
     }
     opts.forEach(function (opt) {
       slots.appendChild(
@@ -492,15 +532,8 @@
       else if (name === "stamp:note") toast("No — the words stay private.", "warn");
     });
     ui.body.appendChild(slots);
-
-    var chain = el("div", "play-chain idle");
-    chain.innerHTML =
-      '<div class="chain-title">Public record (demo)</div>' +
-      '<div class="chain-row">status: <em>empty</em></div>' +
-      '<div class="chain-row">fp: <code>—</code></div>';
     ui.body.appendChild(chain);
-
-    // when they pick right, we re-render soon; also pulse chain on success via next level
+    ui.actions.appendChild(nextBtn);
   }
 
   function level5() {
@@ -517,12 +550,7 @@
     );
 
     var chain = el("div", "play-chain live");
-    chain.innerHTML =
-      '<div class="chain-title">Public record (demo)</div>' +
-      '<div class="chain-row">status: <strong class="ok-t">active</strong></div>' +
-      '<div class="chain-row">fp: <code>' +
-      shortFp(state.chain.fp) +
-      "</code></div>";
+    paintChain(chain, true);
     ui.body.appendChild(chain);
 
     var duel = el("div", "play-scene");
@@ -533,13 +561,19 @@
     ui.body.appendChild(duel);
 
     var answered = false;
+    var nextBtn = btn("Continue →", "primary", function () {
+      if (!answered) return;
+      state.step = 6;
+      render();
+    });
+    nextBtn.disabled = true;
     function caught() {
       if (answered) return;
       answered = true;
-      scoreAdd(20, "you caught the trick");
-      caption("The website lied. The fingerprint did not.");
-      state.step = 6;
-      render();
+      scoreOnce("catch", 20, "you caught the trick");
+      caption("The website lied. The fingerprint did not. Press Continue.");
+      nextBtn.disabled = false;
+      nextBtn.classList.add("ready");
     }
     setPick(function (name) {
       if (name === "attack:match" || name === "lock") caught();
@@ -569,6 +603,7 @@
       );
     });
     ui.body.appendChild(slots);
+    ui.actions.appendChild(nextBtn);
   }
 
   async function level6() {
@@ -583,11 +618,17 @@
       '<div class="v-row"><span>Public record</span><code data-c></code></div>' +
       '<div class="v-row"><span>This file</span><code data-f>—</code></div>' +
       '<div class="v-result" data-r>Pick a file to check</div>';
-    panel.querySelector("[data-c]").textContent = shortFp(state.chain.fp);
+    panel.querySelector("[data-c]").textContent = shortFp(
+      state.chain && state.chain.fp
+    );
     ui.body.appendChild(panel);
 
+    var triedFake = false;
+    var checkingReal = false;
     var actions = el("div", "play-slots");
     var realBtn = btn("Check the real file", "primary", async function () {
+      if (!triedFake || !state.chain || checkingReal) return;
+      checkingReal = true;
       realBtn.disabled = true;
       fakeBtn.disabled = true;
       var s = scene();
@@ -599,10 +640,13 @@
         r.textContent = "MATCH · still live";
         r.className = "v-result yes";
         caption("Match. Anyone can check this — no website required.");
-        scoreAdd(25, "checked");
-        setTimeout(finish, 700);
+        scoreOnce("real", 25, "checked");
+        setTimeout(function () {
+          if (state.step === 6 && !state.finished) finish();
+        }, 700);
       }
     });
+    realBtn.disabled = true;
     var fakeBtn = btn("Check the fake file", "ghost", async function () {
       var s = scene();
       if (s && s.verify) s.verify("fake");
@@ -613,45 +657,59 @@
       r.textContent = "NO MATCH · file was changed";
       r.className = "v-result no";
       toast("Changed file — that’s the whole point", "warn");
-      scoreAdd(10, "caught a fake");
-      // allow real check after
+      scoreOnce("fake", 10, "caught a fake");
+      triedFake = true;
       realBtn.disabled = false;
+      caption("Fake missed. Now check the real file.");
     });
     setPick(function (name) {
       if (name === "verify:fake") fakeBtn.click();
-      else if (name === "verify:real" || name === "lock") realBtn.click();
+      else if (name === "verify:real" || name === "lock") {
+        if (!triedFake) {
+          toast("Try the fake first", "warn");
+          caption("Try the fake file first, then the real one.");
+          return;
+        }
+        realBtn.click();
+      }
     });
-    actions.appendChild(realBtn);
     actions.appendChild(fakeBtn);
+    actions.appendChild(realBtn);
     ui.body.appendChild(actions);
     ui.body.appendChild(
-      el(
-        "p",
-        "play-hint",
-        "Tip: try the fake first, then the real one."
-      )
+      el("p", "play-hint", "Try the fake first, then the real one.")
     );
   }
 
   function finish() {
-    state.step = STEPS;
+    if (state.step !== 6 && !state.finished) return;
+    if (state.finished) {
+      paintFinish();
+      return;
+    }
     state.finished = true;
-    setProgress();
-    caption("You got it. Lock here. Post a fingerprint. Anyone can check.");
+    state.step = SCREENS;
+    setPick(null);
     var s = scene();
     if (s && s.celebrate) s.celebrate();
-    setPick(null);
+    paintFinish();
+    confettiLite(root);
+  }
+
+  function paintFinish() {
+    setProgress();
+    caption("You got it. Lock here. Post a fingerprint. Anyone can check.");
     var ui = stageShell(
-      "You got it",
-      "Lock the file on your computer. Post only a fingerprint. Anyone can check later. The words never leave this machine."
+      "You practiced locally",
+      "This run stayed in the tab. The official stamp is a separate live Devnet proof — not a continuation of this game."
     );
     var recap = el("div", "play-recap");
     recap.innerHTML =
       "<ul>" +
-      "<li><strong>Locked:</strong> " +
-      escapeHtml(state.content.label) +
+      "<li><strong>Locked (practice):</strong> " +
+      escapeHtml(state.content && state.content.label) +
       "</li>" +
-      "<li><strong>Fingerprint:</strong> <code>" +
+      "<li><strong>Fingerprint (practice):</strong> <code>" +
       shortFp(state.fingerprint) +
       "</code></li>" +
       "<li><strong>Score:</strong> " +
@@ -661,28 +719,28 @@
     ui.body.appendChild(recap);
 
     var next = el("div", "play-slots");
-    next.appendChild(
-      el("a", "play-btn primary", "Lock a real claim")
-    );
-    next.lastChild.href = "/studio/new/";
-    next.appendChild(el("a", "play-btn", "For builders"));
-    next.lastChild.href = "/devs/";
+    var lockReal = el("a", "play-btn primary", "Lock a practice file");
+    lockReal.href = "/studio/new/";
+    next.appendChild(lockReal);
+    var checkFile = el("a", "play-btn", "Check a file");
+    checkFile.href = "/verify/";
+    next.appendChild(checkFile);
+    var liveStamp = el("a", "play-btn", "See the live official stamp");
+    liveStamp.href = "/evidence/devnet/";
+    next.appendChild(liveStamp);
     next.appendChild(
       btn("Play again", "ghost", function () {
         reset();
       })
     );
-    next.appendChild(el("a", "play-btn ghost", "Verify a vault"));
-    next.lastChild.href = "/verify/";
     ui.actions.appendChild(next);
     ui.body.appendChild(
       el(
         "p",
         "play-hint",
-        "You just caught a swapped file. Next: lock a real claim the same way."
+        "You practiced locally. The official stamp is a separate live Devnet proof."
       )
     );
-    confettiLite(root);
   }
 
   function escapeHtml(s) {
@@ -709,24 +767,22 @@
   }
 
   function reset() {
-    state = {
-      step: 0,
-      score: 0,
-      content: null,
-      phrase: "",
-      vault: null,
-      fingerprint: null,
-      chain: null,
-      finished: false,
-    };
-    var s = root.querySelector("[data-score]");
-    if (s) s.textContent = "0";
+    state = freshState();
+    var scoreEl = root.querySelector("[data-score]");
+    if (scoreEl) scoreEl.textContent = "0";
+    var s = scene();
+    if (s && s.reset) s.reset();
+    else if (s && s.setPhase) s.setPhase("idle");
     render();
   }
 
   function render() {
     setProgress();
     var s = scene();
+    if (state.finished) {
+      paintFinish();
+      return;
+    }
     if (s && s.setPhase) s.setPhase(phaseForStep(state.step));
     var pipe = (function () {
       if (state.step <= 2) return 0;
@@ -747,7 +803,6 @@
     else if (n === 4) level4();
     else if (n === 5) level5();
     else if (n === 6) level6();
-    else finish();
   }
 
   // boot shell is already in HTML

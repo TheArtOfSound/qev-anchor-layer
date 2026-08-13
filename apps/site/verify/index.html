@@ -7,43 +7,62 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; connect-src 'self' https://api.devnet.solana.com http://127.0.0.1:8899 ws://127.0.0.1:8900; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
     />
-    <title>Verify — QAL</title>
-    <link rel="stylesheet" href="/assets/site.css" />
+    <title>Check a file — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
-      <nav class="app-nav">
+      <nav class="app-nav" aria-label="Primary">
         <a href="/">Play</a>
-        <a href="/studio/">Make</a>
-        <a class="active" href="/verify/">Check</a>
-        <a href="/devs/">Build</a>
+      <div class="nav-group is-on">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub">
-        <a href="/memecoins/">Why</a>
-        <a href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
     </header>
     <div class="wrap">
 
-      <h1>Check a locked file</h1>
+      <p class="crumb"><a href="/studio/">Product</a> / Check a file</p>
+      <h1>Check a file</h1>
       <p class="lede">
         Drop the file. Add the proof slip if you have one. Check. The
         math stays in this tab.
       </p>
+      <noscript>
+        <p class="warn">
+          Check needs JavaScript in this tab. Without it you can still
+          <a href="/evidence/devnet/vault.json">download the hosted demo file</a>
+          and
+          <a href="/evidence/devnet/">open the live Explorer stamps</a>.
+        </p>
+      </noscript>
 
       <div class="warn">
-        Checking against Solana only works when the public program is live.
-        It isn’t yet. You can still load a file and see the fingerprint
-        computed here.
+        A match is not the truth. A liar can lock a lie. Websites can
+        lie; the fingerprint match cannot. Experimental, not audited,
+        test network only.
       </div>
 
       <ol class="steps" style="margin-bottom: 1.5rem">
         <li>
           <strong>Choose the locked file</strong>
-          <p>The package someone shared with you.</p>
+          <p>The official QEV package someone shared with you.</p>
         </li>
         <li>
           <strong>Add the proof slip if you have it</strong>
@@ -62,13 +81,26 @@
       </ol>
 
       <div id="drop" class="drop">
-        Drop the locked file, or
+        Drop the file, or
         <label style="display: inline; color: var(--link); cursor: pointer">
           choose file
           <input id="file" type="file" accept=".json,.qev,application/json" hidden />
         </label>
         <div id="fileName" style="margin-top: 0.5rem; font-size: 0.85rem"></div>
       </div>
+      <div id="fileStatus" hidden></div>
+      <p class="short" style="margin: 0.35rem 0 1rem">
+        <button type="button" id="demoBtn" class="btn-primary">
+          Check the live demo file
+        </button>
+        <span class="hint">Official locker, not Studio. Not File A.</span>
+        <a href="/evidence/devnet/vault.json">Download vault.json</a>
+      </p>
+      <p class="short">
+        Want to practice locally first?
+        <a href="/studio/new/">Lock a practice file in Studio</a>
+        — Check will reject that envelope on purpose.
+      </p>
 
       <label for="receiptFile">Proof slip (JSON)</label>
       <input id="receiptFile" type="file" accept=".json,application/json" />
@@ -100,15 +132,37 @@
 
       <div id="results" hidden style="margin-top: 1.75rem">
         <div id="outcomePill">—</div>
+        <p id="resultMessage" class="note" hidden></p>
         <div class="kv" id="summary"></div>
         <pre id="raw"></pre>
       </div>
 
-      <footer>
-        <a href="/">Play the game</a>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
       </footer>
     </div>
     <script src="/verify/vendor/solana-web3.min.js"></script>
-    <script src="/verify/verifier.js"></script>
+    <script src="/verify/verifier.js?v=20260813d"></script>
+      <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>

@@ -4,38 +4,54 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Limits — QAL</title>
-    <link rel="stylesheet" href="/assets/site.css" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
-      <nav class="app-nav">
+      <nav class="app-nav" aria-label="Primary">
         <a href="/">Play</a>
-        <a href="/studio/">Make</a>
-        <a href="/verify/">Check</a>
-        <a href="/devs/">Build</a>
+      <div class="nav-group">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group is-on">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub">
-        <a href="/memecoins/">Why</a>
-        <a href="/docs/">More</a>
-        <a class="active" href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
     </header>
     <div class="wrap">
 
+      <p class="crumb"><a href="/learn/">Learn</a> / Limits</p>
       <h1>What we don’t promise</h1>
-      <p class="lede">Short and blunt.</p>
+      <p class="lede">
+        Lock (local) → Fingerprint (public) → Check (anyone).
+        QEV is the locker. QAL is the stamp. Studio is practice, not an
+        official vault. No token. No wallet required to check.
+      </p>
 
       <div class="warn">
-        Early. Not audited. The public Solana program is not live yet. Do
-        not use this as legal proof.
+        Early. Not audited. The official program is live on Solana’s test
+        network only. Do not use this as legal proof. A liar can still lock
+        a lie.
       </div>
 
       <h2>Old address — never use it</h2>
-      <p>An early copy leaked a key. Do not use:</p>
+      <p>An early copy leaked a key. This abandoned id is not official:</p>
       <pre>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</pre>
-      <p>Intended address (key is not in the public repo):</p>
+      <p>Official program (key is not in the public repo):</p>
       <pre>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</pre>
 
       <h2>We don’t protect you from</h2>
@@ -56,10 +72,30 @@
         <a href="/fund/">How to send</a>
       </p>
 
-      <footer>
-        More in <code>SECURITY.md</code> and <code>DISCLAIMER.md</code> on
-        GitHub.
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
       </footer>
     </div>
+      <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>

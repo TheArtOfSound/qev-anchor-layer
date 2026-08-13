@@ -190,6 +190,31 @@
     });
   }
 
+  /* ---------- nav: tap to open Product / Learn ---------- */
+  document.querySelectorAll(".nav-group").forEach(function (g) {
+    var parent = g.querySelector(".nav-parent");
+    if (!parent) return;
+    parent.addEventListener("click", function (e) {
+      if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+        return;
+      }
+      if (!g.classList.contains("open")) {
+        e.preventDefault();
+        document.querySelectorAll(".nav-group.open").forEach(function (o) {
+          if (o !== g) o.classList.remove("open");
+        });
+        g.classList.add("open");
+      }
+    });
+  });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest || !e.target.closest(".nav-group")) {
+      document.querySelectorAll(".nav-group.open").forEach(function (g) {
+        g.classList.remove("open");
+      });
+    }
+  });
+
   /* ---------- hero + section reveal ---------- */
   var reducedMotion =
     window.matchMedia &&
@@ -227,11 +252,12 @@
     }
   }
 
-  /* breath cards replay a 3D beat */
+  /* breath cards replay a 3D beat — never steal the theater mid-play */
   document.querySelectorAll("[data-breath]").forEach(function (card) {
     card.addEventListener("click", function () {
-      var beat = Number(card.getAttribute("data-breath") || 0);
       var play = document.getElementById("play");
+      if (play && play.classList.contains("playing")) return;
+      var beat = Number(card.getAttribute("data-breath") || 0);
       if (play) play.scrollIntoView({ behavior: "smooth", block: "start" });
       var s = window.QALScene;
       if (s && s.replay) s.replay(beat);

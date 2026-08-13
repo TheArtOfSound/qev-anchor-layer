@@ -139,6 +139,25 @@ addressable, and cost pennies. Batching earlier adds proof-plumbing
 justify it. Studio's data model should keep a `batch_ref` field reserved so
 records don't need a migration when C lands.
 
+## Bridge question — browser envelope ≠ QEV vault
+
+The Studio prototype seals with WebCrypto (PBKDF2-SHA-256 · AES-256-GCM)
+because Argon2id/XChaCha20 are not in WebCrypto. Its envelopes carry schema
+`QAL-STUDIO-ENVELOPE-V1` and self-label as not-QEV — correct and honest.
+Digest rules are shared (canonical JSON → SHA-256), and the on-chain
+`qev_schema_hash` field cleanly distinguishes the two formats, so nothing
+breaks. But "portable .qev vault" marketing is only true of the CLI path
+until one of:
+
+| Option | Cost | Outcome |
+|--------|------|---------|
+| **W. QEV-wasm in browser** | Port/pin QEV's Argon2id+XChaCha20 to wasm | One format everywhere (preferred, v0.2) |
+| **D. Dual-schema forever** | Copy discipline | Studio envelopes stay second-class; every surface must label which format it holds |
+
+Until W lands, the Studio UI must keep the prototype's honesty: browser-made
+commitments are labeled as browser envelopes, and "re-seal with QEV CLI for
+production evidence" stays visible.
+
 ## Open boundary — qev-platform
 
 `qev-platform` ("customer-controlled gateway, SDKs, connectors, evidence

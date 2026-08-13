@@ -3,31 +3,45 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Details — QAL</title>
-    <link rel="stylesheet" href="/assets/site.css" />
+    <title>How — QAL</title>
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
-      <nav class="app-nav">
+      <nav class="app-nav" aria-label="Primary">
         <a href="/">Play</a>
-        <a href="/studio/">Make</a>
-        <a href="/verify/">Check</a>
-        <a href="/devs/">Build</a>
+      <div class="nav-group">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Make a claim</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group is-on">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub">
-        <a href="/memecoins/">Why</a>
-        <a class="active" href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
     </header>
     <div class="wrap">
 
+      <p class="crumb"><a href="/learn/">Learn</a> / How</p>
       <h1>A bit more detail</h1>
       <p class="lede">
         If the game on the home page was enough, stay there. This page is for
-        people who want the names of the parts.
+        people who want the names of the parts. Lock (local) → Fingerprint
+        (public) → Check (anyone). No token. No wallet required to check.
+        The test-network program is live — see
+        <a href="/evidence/devnet/">public Devnet proof</a>.
       </p>
 
       <h2>Two pieces</h2>
@@ -45,6 +59,16 @@
           <td>The public stamp for that file, plus history you can check later.</td>
         </tr>
       </table>
+      <p class="short">
+        Studio is practice in the browser — not the official QEV vault.
+        A liar can still lock a lie.
+      </p>
+
+      <h2>Official program</h2>
+      <p>Use this id only:</p>
+      <pre>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</pre>
+      <p>Abandoned, compromised — not official:</p>
+      <pre>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</pre>
 
       <h2>How the fingerprint is made</h2>
       <pre>validate schema (BRY-NFET-SX-VAULT-V2)
@@ -78,9 +102,30 @@ qal verify file.qev --receipt file.qal-receipt.json</pre>
         >
       </div>
 
-      <footer>
-        <a href="/">Home</a>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Make a claim</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
       </footer>
     </div>
+      <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>

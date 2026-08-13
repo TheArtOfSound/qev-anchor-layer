@@ -1,55 +1,38 @@
-# QAL v0.1.2 — experimental Solana devnet evidence
+# QAL v0.1.2 — experimental Solana Devnet evidence
 
-> This is an experimental Solana devnet deployment of QAL v0.1.2. It is
-> **unaudited** and **unsuitable for production evidence**. The included
-> transactions demonstrate encryption-envelope digest anchoring, receipt
-> verification, revocation, and atomic supersession on devnet.
+> Experimental. Unaudited. Devnet only. **Not production proof.** No token.
 
 ## Status
 
-**Pending live deployment.** Public faucet rate limits blocked funding of the
-dedicated deploy authority in the automated session. After funding, run:
+**Live on Devnet as of 2026-08-13.**
 
-```bash
-./scripts/deploy-devnet.sh
-```
+| Item | Value |
+|------|--------|
+| Program | `6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR` |
+| Deploy tx | `2G4pDhJ8b1ZWFjNzUcorMGTbKpVTqhk6Yqa6R3srBwkT3K4qnYWUc5Sa32HzyL8DpTo6oPW4eG54pQz9opSHKrkt` |
+| Upgrade authority | `3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz` (not the grant wallet) |
+| Integration test | PASS — lock → stamp → check → fake file fails → take back → replace |
 
-## Official program ID
+Grant receive wallet `8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe` was **not** used as authority.
 
-```text
-6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR
-```
+## What this proves
 
-## What must be filled after deploy
+- A locked file’s fingerprint can be posted
+- A changed file does **not** match (`DIGEST_MISMATCH`)
+- Taking it back still matches the file (`VALID_REVOKED`)
+- A new version can replace the old one, with the parent fingerprint kept
 
-| File | Content |
-|------|---------|
-| `source-commit.txt` | `git rev-parse HEAD` |
-| `program-id.txt` | Official program ID |
-| `genesis-hash.txt` | `solana genesis-hash --url devnet` |
-| `deployment-transaction.txt` | Deploy tx signature |
-| `program-data.json` | `solana program show … --output json` |
-| `upgrade-authority.txt` | Deploy authority pubkey |
-| `binary-sha256.txt` | `shasum -a 256 target/deploy/qal_anchor.so` |
-| `anchor-receipt.json` | First anchor receipt |
-| `anchor-transaction.txt` | Anchor tx |
-| `revoke-transaction.txt` | Revoke tx |
-| `supersede-transaction.txt` | Atomic supersede tx |
-| `vault-digests.json` | Digests + PDAs |
-| `explorer-links.md` | Explorer URLs |
-| `test-output.txt` | `QAL_DEVNET=1` test log |
+It does **not** prove the words are true. A liar can still lock a lie.
+
+## Explorer
+
+See [`explorer-links.md`](./explorer-links.md).
 
 ## Never commit
 
-- Wallet / program keypairs, seed phrases  
-- Private RPC credentials  
-- QEV passphrases, plaintext, decrypted content  
-
-## Grant receive wallet (not deploy authority)
-
-```text
-8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe
-```
+- Wallet / program keypairs, seed phrases
+- Private RPC credentials
+- Lock phrases, plaintext, decrypted content
 
 ## Label
 

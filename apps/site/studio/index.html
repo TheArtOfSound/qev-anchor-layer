@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QAL Studio — commitments</title>
+    <title>QAL Studio — practice locker</title>
     <meta
       name="description"
-      content="Lock a claim on this computer. Track live, replaced, taken back, or contested. Public posting is not live yet."
+      content="Practice locker in this browser. Check is for official files. Proof is the live Devnet stamp."
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -15,32 +15,42 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/site.css" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
   </head>
   <body class="app">
     <header class="app-bar">
       <a class="brand" href="/">QAL</a>
-      <nav class="app-nav">
+      <nav class="app-nav" aria-label="Primary">
         <a href="/">Play</a>
-        <a class="active" href="/studio/">Make</a>
-        <a href="/verify/">Check</a>
-        <a href="/devs/">Build</a>
+      <div class="nav-group is-on">
+        <a class="nav-parent" href="/studio/">Product</a>
+        <div class="nav-drop">
+          <a href="/studio/">Practice locker</a>
+          <a href="/verify/">Check a file</a>
+          <a href="/evidence/devnet/">Live proof</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <a class="nav-parent" href="/learn/">Learn</a>
+        <div class="nav-drop">
+          <a href="/learn/">Overview</a>
+          <a href="/memecoins/">Why</a>
+          <a href="/docs/">How</a>
+          <a href="/security/">Limits</a>
+        </div>
+      </div>
+        <a href="/devs/">Builders</a>
       </nav>
-      <nav class="app-sub">
-        <a href="/memecoins/">Why</a>
-        <a href="/docs/">More</a>
-        <a href="/security/">Limits</a>
-        <a class="nav-fund" href="/fund/">Fund</a>
-      </nav>
+      <a class="nav-fund" href="/fund/">Fund</a>
     </header>
     <div class="wrap">
 
-      <p class="theater-kicker">Make · lock a claim on this computer</p>
-      <h1>Your locked claims</h1>
+      <p class="crumb"><a href="/studio/">Product</a> / Practice locker</p>
+      <h1>Practice locker</h1>
       <p class="lede">
-        Lock a promise here. You keep the fingerprint. Public posting is not
-        live yet — but you can still mark something live, replaced, taken
-        back, or contested, and see the history.
+        Studio is a practice locker in this browser. It does not post or
+        stamp anything. Check is for official locker files. Proof is the
+        live Devnet stamp — Studio is not the issuer of that stamp.
       </p>
 
       <div class="warn">
@@ -57,14 +67,23 @@
         </label>
         <span class="hint"><span data-studio-count>0</span> here</span>
       </div>
+      <p class="warn" data-import-error hidden></p>
 
       <div data-studio-list></div>
 
       <h2>What this is</h2>
       <p class="short">
-        QEV is the locker on your computer. QAL is the public stamp for that
-        locked file: live, replaced, taken back, or contested. This page is
-        the simple front for that.
+        <strong>Studio</strong> — practice locker in this browser. Local
+        only. Not posted.
+      </p>
+      <p class="short">
+        <strong>Check</strong> — look up an official locker file
+        (<a href="/verify/">open Check</a>).
+      </p>
+      <p class="short">
+        <strong>Proof</strong> — the live Devnet stamp
+        (<a href="/evidence/devnet/">open live proof</a>). Studio did not
+        post that stamp.
       </p>
       <p class="short">
         <a href="/">Play the 2-minute game</a>
@@ -72,8 +91,31 @@
         · <a href="/fund/">Help finish it</a>
       </p>
 
-      <footer>Early draft · open source · stays on this computer for now</footer>
+      <footer class="site-foot">
+        <div class="site-map">
+          <div>
+            <h3>Product</h3>
+            <a href="/studio/">Practice locker</a>
+            <a href="/verify/">Check a file</a>
+            <a href="/evidence/devnet/">Live proof</a>
+          </div>
+          <div>
+            <h3>Learn</h3>
+            <a href="/learn/">Overview</a>
+            <a href="/memecoins/">Why</a>
+            <a href="/docs/">How</a>
+            <a href="/security/">Limits</a>
+          </div>
+          <div>
+            <h3>Builders</h3>
+            <a href="/devs/">Builders</a>
+            <a href="/fund/">Fund</a>
+            <a href="https://github.com/TheArtOfSound/qev-anchor-layer">GitHub</a>
+          </div>
+        </div>
+      </footer>
     </div>
-    <script src="/assets/studio.js" defer></script>
+    <script src="/assets/studio.js?v=20260813c" defer></script>
+      <script src="/assets/site.js?v=20260813c" defer></script>
   </body>
 </html>
