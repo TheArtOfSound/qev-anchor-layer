@@ -36,7 +36,8 @@ solana config set --keypair "$DEPLOY_AUTH"
 echo "Genesis: $(solana genesis-hash)"
 echo "Balance: $(solana balance)"
 
-BAL_LAMPORTS="$(solana balance --output json | python3 -c 'import sys,json; print(int(float(json.load(sys.stdin)["value"])*1e9))' 2>/dev/null || echo 0)"
+# solana balance --output json returns { "lamports": N } (not SOL float).
+BAL_LAMPORTS="$(solana balance --output json | python3 -c 'import sys,json; d=json.load(sys.stdin); print(int(d.get("lamports", d.get("value",0))))' 2>/dev/null || echo 0)"
 # Require ~2 SOL for program deploy
 if [ "${BAL_LAMPORTS:-0}" -lt 1500000000 ]; then
   echo "ERROR: Deploy authority underfunded ($BAL_LAMPORTS lamports). Fund with devnet SOL only."
@@ -44,6 +45,7 @@ if [ "${BAL_LAMPORTS:-0}" -lt 1500000000 ]; then
   echo "  or https://faucet.solana.com"
   exit 1
 fi
+echo "Balance gate OK: $BAL_LAMPORTS lamports"
 
 mkdir -p target/deploy
 cp "$PROGRAM_KEYPAIR" target/deploy/qal_anchor-keypair.json
