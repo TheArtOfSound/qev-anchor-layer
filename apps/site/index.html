@@ -3,249 +3,206 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QAL — lock a vault, prove it on Solana</title>
+    <title>QAL — lock it, prove it, catch a fake</title>
     <meta
       name="description"
-      content="Walkthrough: encrypt with QEV, anchor a digest on Solana, verify later. How this helps memecoin honesty without trusting a website."
+      content="A 2-minute game: lock a promise on your computer, post only a fingerprint, catch a website that swapped the file."
     />
-    <link rel="stylesheet" href="/assets/site.css" />
+    <meta property="og:title" content="QAL — lock it, prove it, catch a fake" />
+    <meta
+      property="og:description"
+      content="Websites can change. A fingerprint cannot. Two minutes. No wallet."
+    />
+    <meta property="og:url" content="https://bestmemecoins.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://bestmemecoins.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="QAL — play to learn" />
+    <meta
+      name="twitter:description"
+      content="Seal something. Prove it. Catch a fake. ~2 minutes — you click, it teaches."
+    />
+    <meta name="twitter:image" content="https://bestmemecoins.app/og.png" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/site.css?v=5" />
   </head>
-  <body>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/">QAL</a>
-        <a class="active" href="/">Start here</a>
-        <a href="/verify/">Verify</a>
-        <a href="/memecoins/">Memecoins</a>
-        <a href="/docs/">Details</a>
-        <a href="/security/">Limits</a>
-        <a href="/fund/">Fund / grants</a>
+  <body class="app home">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav" aria-label="Primary">
+        <a class="active" href="/">Play</a>
+        <a href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
       </nav>
+      <nav class="app-sub" aria-label="More">
+        <a href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
 
-      <h1>Lock a file. Prove the lock. Check it later.</h1>
-      <p class="one-liner">
-        QAL is a simple public proof that
-        <em>this exact encrypted package</em> existed — without putting secrets
-        on the blockchain.
+    <main class="app-main">
+      <!-- 3D stage + controls side by side so the next click is never off-screen -->
+      <section
+        class="workspace play"
+        id="play"
+        aria-label="Learn QAL by playing"
+      >
+        <div class="workspace-stage theater-stage">
+          <canvas id="hero-canvas" aria-hidden="true"></canvas>
+          <div class="theater-glow"></div>
+          <p class="theater-caption" data-caption>
+            Lock a promise. Catch a fake website.
+          </p>
+          <button type="button" class="theater-start" data-start-overlay>
+            Play — 2 minutes →
+          </button>
+        </div>
+
+        <aside class="workspace-panel theater-dock">
+          <div class="hero-pipeline theater-pipe" aria-label="How QAL works in three steps">
+            <div class="pipe-node" data-pipe="0">
+              <span class="pipe-icon" aria-hidden="true">🔒</span>
+              <span class="pipe-label">Lock</span>
+            </div>
+            <div class="pipe-beam" aria-hidden="true"><i></i></div>
+            <div class="pipe-node" data-pipe="1">
+              <span class="pipe-icon" aria-hidden="true">⛓️</span>
+              <span class="pipe-label">Stamp</span>
+            </div>
+            <div class="pipe-beam" aria-hidden="true"><i></i></div>
+            <div class="pipe-node" data-pipe="2">
+              <span class="pipe-icon" aria-hidden="true">✓</span>
+              <span class="pipe-label">Check</span>
+            </div>
+          </div>
+          <div class="play-top">
+            <span class="lvl" data-play-level>Level 1 / 6</span>
+            <span class="score-wrap"
+              >score <span class="score" data-score>0</span></span
+            >
+          </div>
+          <div class="play-progress" aria-hidden="true">
+            <i data-play-fill></i>
+          </div>
+          <div class="play-stage" data-stage>
+            <!-- filled by play.js -->
+          </div>
+          <div class="play-toast" data-toast role="status" aria-live="polite"></div>
+        </aside>
+      </section>
+
+      <div class="below">
+      <p class="short play-note">
+        This game stays in your browser. No wallet. The real locker lives on
+        your computer. The public fingerprint is meant for Solana later.
       </p>
 
-      <div class="warn">
-        Pre-alpha · unaudited · not financial advice · not legal notarization ·
-        no token. Use for demos and experiments only until audited and deployed
-        carefully.
+      <div class="play-cta-row">
+        <a class="btn-primary" href="/studio/new/">Lock a real claim</a>
+        <a class="secondary" href="/devs/">For builders</a>
+        <a class="secondary" href="/verify/">Check a file</a>
+        <a class="btn-fund" href="/fund/">Help build it →</a>
       </div>
 
-      <div class="actions">
-        <a class="primary" href="#walkthrough">Walk through it</a>
-        <a class="secondary" href="/verify/">Try verify</a>
-        <a class="secondary" href="/memecoins/">Memecoin angle</a>
-        <a class="secondary" href="/fund/">Solana funding wallet</a>
-      </div>
-
-      <!-- PROBLEM -->
-      <h2>The problem in one minute</h2>
-      <p>
-        Anyone can post a screenshot, a “locked LP,” a roadmap PDF, or a
-        “team doxx vault” on a website. Websites can be edited. Telegram can
-        lie. Screenshots can be faked.
-      </p>
-      <p>
-        What people actually need is:
-        <strong>can I check, myself, that this exact sealed package is the
-        same one someone committed earlier?</strong>
-      </p>
-      <p>
-        That’s what we’re building. Two pieces:
-      </p>
-      <ul>
-        <li>
-          <strong>QEV</strong> — encrypts the file on your computer (already
-          works offline).
-        </li>
-        <li>
-          <strong>QAL</strong> — puts a tiny fingerprint of that sealed file on
-          Solana, so others can re-check it.
-        </li>
-      </ul>
-
-      <!-- WALKTHROUGH -->
-      <h2 id="walkthrough">Walkthrough (plain English)</h2>
-      <ol class="steps">
-        <li>
-          <strong>You have something sensitive</strong>
-          <p>
-            A team statement, a vesting schedule, a partnership note, dump of
-            build hashes, a “we won’t rug” letter, whatever. You do
-            <em>not</em> want the whole world reading it raw forever — but you
-            may want to prove later that <em>this sealed version</em> is the
-            one you published.
-          </p>
-        </li>
-        <li>
-          <strong>Encrypt it locally with QEV</strong>
-          <p>
-            On your machine (or with the QEV app/CLI), lock the file with a
-            long phrase. You get a
-            <code>.qev</code> vault: scrambled data + metadata. No chain yet.
-            If someone never gets the phrase, they can’t read it.
-          </p>
-        </li>
-        <li>
-          <strong>Make a fingerprint (digest)</strong>
-          <p>
-            QAL takes the full vault JSON, sorts it the same way every time,
-            and runs SHA-256. Result: a 64-character hex fingerprint. Change
-            one byte of the vault → fingerprint changes. Formatting noise does
-            not.
-          </p>
-        </li>
-        <li>
-          <strong>Anchor the fingerprint on Solana</strong>
-          <p>
-            A wallet you control signs a transaction that stores:
-            the fingerprint, who issued it, and a status (active / revoked /
-            replaced).
-            <strong>Not</strong> the password. <strong>Not</strong> the file.
-            <strong>Not</strong> the keys.
-          </p>
-        </li>
-        <li>
-          <strong>You keep a small receipt</strong>
-          <p>
-            A JSON receipt points at the on-chain record (addresses, network,
-            tx). Share the vault + receipt with people who should be able to
-            check. They don’t have to trust your website.
-          </p>
-        </li>
-        <li>
-          <strong>Anyone verifies independently</strong>
-          <p>
-            Recompute the fingerprint from the vault file. Read the Solana
-            account. Same hash? → package matches. Status still active, or
-            revoked / superseded? → separate answer. Match and status are never
-            collapsed into one vague “OK.”
-          </p>
-        </li>
-      </ol>
-
-      <pre>file
-  → QEV encrypt (local)
-  → fingerprint SHA-256
-  → Solana stores fingerprint + status
-  → others re-hash + read chain</pre>
-
-      <h2>What “safer” means here (especially for memecoins)</h2>
-      <p>
-        Memecoins are not made “safe” by any tool. They can still go to zero.
-        Rugs still happen. What QAL can improve is
-        <strong>honesty about sealed statements</strong>:
-      </p>
-      <ul class="checks">
-        <li>
-          Team can lock a disclosure vault <em>before</em> hype peaks and
-          prove the sealed blob didn’t change later.
-        </li>
-        <li>
-          If they need to update the story, they
-          <em>supersede</em> with a new vault and leave a public trail — not
-          silent website edits.
-        </li>
-        <li>
-          If a promise is withdrawn, they can
-          <em>revoke</em> the endorsement without erasing history (people still
-          see it was once anchored).
-        </li>
-        <li>
-          Community can verify with their own tools — not “trust our
-          dashboard.”
-        </li>
-      </ul>
-      <p>
-        Full write-up:
-        <a href="/memecoins/">How this relates to memecoins →</a>
-      </p>
-
-      <h2>What this is not</h2>
-      <ul class="nope">
-        <li>Not on-chain encryption (secrets never go on Solana)</li>
-        <li>Not a guarantee the team is honest or human</li>
-        <li>Not proof of real-world identity just because a wallet signed</li>
-        <li>Not a memecoin, not a launchpad, not a token</li>
-        <li>Not production-ready or audited yet</li>
-      </ul>
-
-      <h2>Try it on this machine</h2>
-      <div class="actions">
-        <a class="primary" href="/verify/">Open the verifier</a>
-        <a
-          class="secondary"
-          href="https://github.com/TheArtOfSound/qev-anchor-layer"
-          target="_blank"
-          rel="noopener"
-          >Code on GitHub</a
+      <section class="fund-card reveal" aria-label="Funding progress">
+        <h3>Help us finish the public version</h3>
+        <p class="fund-why">
+          This pays for a careful release people can check themselves.
+          Optional. Not a share of the company. Not a coin.
+        </p>
+        <div class="fund-meta">
+          <strong data-fund-status>Loading…</strong>
+          <span
+            ><span data-fund-pct>0</span>% of
+            <span data-fund-goal>25</span> SOL</span
+          >
+        </div>
+        <div
+          class="fund-track"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Funding progress"
         >
-      </div>
-      <p class="note">
-        Verifier hashes in your browser. The vault is not uploaded to us.
-        Devnet program deploy is still incomplete on public RPC — verification
-        against chain only works once the program is live.
-      </p>
-
-      <!-- FUNDING -->
-      <h2 id="fund">Solana wallet for funding &amp; grants</h2>
-      <p>
-        If you want to support development, send
-        <strong>sponsorships, bounties, or approved grants</strong> to Bryan’s
-        public receive wallet on Solana. This is for funding acceptance — not
-        a contract, not the program authority, not a fee-payer for deploys.
-      </p>
-
-      <div class="wallet" id="funding-wallet">
-        <h3>Receive address (Solana)</h3>
-        <div class="addr" id="wallet-addr">
+          <div class="fund-fill" data-fund-fill></div>
+        </div>
+        <div class="fund-actions">
+          <a class="btn-fund" href="/fund/">Send SOL</a>
+          <button type="button" class="btn-copy" data-copy="#wallet-addr">
+            Copy wallet
+          </button>
+          <span class="hint">Live balance · receive only</span>
+        </div>
+        <div class="fund-addr" id="wallet-addr" hidden>
           8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe
         </div>
-        <button type="button" class="btn-copy" id="copy-wallet">
-          Copy address
-        </button>
-        <p style="margin-top: 0.75rem">
-          Use for: grants, sponsorships, donations, approved payments.
-        </p>
-        <p>
-          Do <strong>not</strong> use as: program upgrade key, mint authority,
-          automated signer, or “send me deploy fees here.”
-        </p>
+      </section>
+
+      <section class="breath reveal">
+        <h2>The whole idea</h2>
+        <p class="short breath-hint">Tap a card to replay it on the stage.</p>
+        <div class="breath-cards">
+          <button type="button" class="breath-card" data-breath="0">
+            <div class="breath-num">1</div>
+            <div class="breath-ico" aria-hidden="true">🔐</div>
+            <p>Lock the real file on your computer</p>
+          </button>
+          <button type="button" class="breath-card" data-breath="1">
+            <div class="breath-num">2</div>
+            <div class="breath-ico" aria-hidden="true">⛓️</div>
+            <p>Post only a tiny fingerprint — not the words</p>
+          </button>
+          <button type="button" class="breath-card" data-breath="2">
+            <div class="breath-num">3</div>
+            <div class="breath-ico" aria-hidden="true">🔍</div>
+            <p>Anyone can check later. A website can lie. The match cannot.</p>
+          </button>
+        </div>
+      </section>
+
+      <section class="nope-section reveal">
+        <h2>What this is not</h2>
+        <ul class="nope">
+          <li>Not a way to pick a “safe” coin</li>
+          <li>Not putting your secrets on the internet</li>
+          <li>Not a new token</li>
+          <li>Not finished. Not reviewed by auditors.</li>
+        </ul>
+      </section>
+
+      <div class="fund-strip" aria-label="Support QAL">
+        <div class="row">
+          <p>
+            <strong>Help finish the next step</strong><br />
+            <span data-fund-status>…</span>
+          </p>
+          <a class="btn-fund" href="/fund/">Support →</a>
+        </div>
+        <div class="fund-track">
+          <div class="fund-fill" data-fund-fill></div>
+        </div>
       </div>
 
       <footer>
-        Built by TheArtOfSound / Qira · MIT ·
-        <a href="/security/">Read the limits</a>
+        Early draft · open source ·
+        <a href="/security/">What we don’t promise</a> ·
+        <a href="/fund/">Fund</a>
       </footer>
-    </div>
-    <script>
-      (function () {
-        var btn = document.getElementById("copy-wallet");
-        var addr = document.getElementById("wallet-addr");
-        if (!btn || !addr) return;
-        btn.addEventListener("click", function () {
-          var text = addr.textContent.trim();
-          function done() {
-            btn.textContent = "Copied";
-            btn.classList.add("done");
-            setTimeout(function () {
-              btn.textContent = "Copy address";
-              btn.classList.remove("done");
-            }, 1600);
-          }
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done).catch(function () {
-              window.prompt("Copy address:", text);
-            });
-          } else {
-            window.prompt("Copy address:", text);
-          }
-        });
-      })();
-    </script>
+      </div>
+    </main>
+    <script src="/assets/site.js?v=5" defer></script>
+    <script src="/assets/play.js?v=5" defer></script>
+    <script type="module" src="/assets/hero-3d.js?v=5"></script>
   </body>
 </html>

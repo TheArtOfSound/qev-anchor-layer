@@ -1,0 +1,9 @@
+node_modules
+.wrangler
+wrangler.toml
+wrangler-worker.toml
+package.json
+package-lock.json
+build.mjs
+worker.js
+*.map

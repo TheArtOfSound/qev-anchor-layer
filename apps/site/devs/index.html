@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Developer toolkit — QAL</title>
+    <meta
+      name="description"
+      content="Put commitment integrity in your app: commit, verify, supersede, revoke, history. Same primitives as the CLI."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a class="active" href="/devs/">Build</a>
+      </nav>
+      <nav class="app-sub">
+        <a href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap wrap-wide">
+
+      <p class="theater-kicker">For builders</p>
+      <h1>Put this check in your own app</h1>
+      <p class="lede">
+        Not “hash a file and forget it.” Lock an exact file, then check it,
+        replace it, take it back, and show the history. Those verbs already
+        exist in the protocol.
+      </p>
+
+      <div class="warn">
+        Early. Test networks only. Not audited. Public Solana posting is
+        not live. Don’t ship this as real-world proof yet.
+      </div>
+
+      <h2>The idea in code</h2>
+<pre>const commitment = await qal.commit({
+  vault,
+  title: "Treasury Disclosure"
+})
+
+await qal.verify(commitment)
+await qal.supersede(oldCommitment, newVault)
+await qal.revoke(commitment)
+await qal.history(commitment)</pre>
+
+      <p class="short">
+        Same verbs in the command line:
+      </p>
+<pre>qal encrypt INPUT --out vault.qev
+qal anchor vault.qev --network devnet
+qal verify vault.qev --receipt vault.qal-receipt.json
+qal history VAULT_DIGEST --issuer PUBKEY
+qal revoke ANCHOR_ADDRESS
+qal supersede OLD_VAULT NEW_VAULT</pre>
+
+      <h2>What the public record holds</h2>
+      <ul class="checks">
+        <li>A fingerprint that never changes</li>
+        <li>A status that can: stay live, be taken back, be replaced, or be contested</li>
+        <li>Replace is one step: new stamp + old one marked “replaced”</li>
+        <li>Taken back and replaced are final. Status never silently edits the fingerprint.</li>
+      </ul>
+
+      <h2>What never goes public</h2>
+      <ul class="nope">
+        <li>The words</li>
+        <li>The phrase or keys</li>
+        <li>The locked file itself (default is fingerprint only)</li>
+      </ul>
+
+      <h2>Packages</h2>
+      <p>
+        <a href="https://github.com/TheArtOfSound/qev-anchor-layer">qev-anchor-layer</a>
+        · <code>@qira/qal-sdk</code> · <code>@qira/qal-cli</code>
+        · QEV pin <code>@bryan237l/qev-cli@0.30.0</code>
+      </p>
+
+      <h2>Try it without code</h2>
+      <div class="play-cta-row">
+        <a class="btn-primary" href="/studio/new/">Lock a claim in the browser</a>
+        <a class="secondary" href="/">Play the game</a>
+      </div>
+
+      <footer>Checking stays free. Posting in public may cost a little after the real network is live.</footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QAL Studio — commitments</title>
+    <meta
+      name="description"
+      content="Lock a claim on this computer. Track live, replaced, taken back, or contested. Public posting is not live yet."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a class="active" href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
+      </nav>
+      <nav class="app-sub">
+        <a href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap">
+
+      <p class="theater-kicker">Make · lock a claim on this computer</p>
+      <h1>Your locked claims</h1>
+      <p class="lede">
+        Lock a promise here. You keep the fingerprint. Public posting is not
+        live yet — but you can still mark something live, replaced, taken
+        back, or contested, and see the history.
+      </p>
+
+      <div class="warn">
+        This browser locker is for practice. It is
+        <strong>not</strong> the official QEV lock. Don’t treat it as proof
+        in the real world. A liar can still lock a lie.
+      </div>
+
+      <div class="studio-toolbar">
+        <a class="btn-primary" href="/studio/new/">Lock a claim</a>
+        <label class="secondary" style="cursor: pointer">
+          Open a saved file
+          <input data-import type="file" accept=".json,application/json" hidden />
+        </label>
+        <span class="hint"><span data-studio-count>0</span> here</span>
+      </div>
+
+      <div data-studio-list></div>
+
+      <h2>What this is</h2>
+      <p class="short">
+        QEV is the locker on your computer. QAL is the public stamp for that
+        locked file: live, replaced, taken back, or contested. This page is
+        the simple front for that.
+      </p>
+      <p class="short">
+        <a href="/">Play the 2-minute game</a>
+        · <a href="/devs/">For builders</a>
+        · <a href="/fund/">Help finish it</a>
+      </p>
+
+      <footer>Early draft · open source · stays on this computer for now</footer>
+    </div>
+    <script src="/assets/studio.js" defer></script>
+  </body>
+</html>

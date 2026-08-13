@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Commitment — QAL Studio</title>
+    <meta
+      name="description"
+      content="Commitment dashboard: status, fingerprint, history scar, revoke, supersede, dispute."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a class="active" href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
+      </nav>
+      <nav class="app-sub">
+        <a href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap wrap-wide">
+
+      <div data-studio-dash>
+        <p class="theater-kicker">This claim · history stays</p>
+        <h1 data-title>Claim</h1>
+        <p>
+          <span data-status class="status-pill">—</span>
+          <span class="hint" data-vis></span>
+        </p>
+
+        <div class="studio-kv">
+          <div>
+            <span>Locked</span>
+            <strong data-when>—</strong>
+          </div>
+          <div>
+            <span>Who locked it</span>
+            <code data-issuer>—</code>
+          </div>
+          <div>
+            <span>Fingerprint</span>
+            <code data-digest class="break">—</code>
+          </div>
+          <div>
+            <span>Where</span>
+            <strong data-network>—</strong>
+          </div>
+        </div>
+
+        <div class="warn">
+          This is not posted to Solana yet. You can still mark it live,
+          replaced, taken back, or contested. Changing the status does
+          <em>not</em> change the fingerprint.
+        </div>
+
+        <div class="studio-actions">
+          <button type="button" class="play-btn" data-act-verify>Check this copy</button>
+          <button type="button" class="play-btn ghost" data-dl-vault>Download locked file</button>
+          <button type="button" class="play-btn ghost" data-dl-record>Download record</button>
+          <button type="button" class="play-btn ghost" data-copy-link>Copy link</button>
+        </div>
+        <div class="v-result" data-verify-out hidden></div>
+
+        <h2>Need to change this?</h2>
+        <p class="short">
+          Don’t edit it in place. Make a new version. The old fingerprint
+          stays visible — a scar, not a cover-up.
+        </p>
+        <div class="studio-actions">
+          <a class="play-btn primary" data-act-version href="/studio/new/">Make a new version</a>
+          <button type="button" class="play-btn ghost" data-act-dispute>Mark contested</button>
+          <button type="button" class="play-btn ghost" data-act-reopen>Mark live again</button>
+          <button type="button" class="play-btn" data-act-revoke>Take it back</button>
+        </div>
+
+        <h2>History</h2>
+        <ol class="hist" data-history></ol>
+
+        <h2>What happened to this file</h2>
+        <ul class="checks" data-events></ul>
+
+        <p class="note" data-cap-note hidden>
+          You’ve locked several claims on this computer. When public
+          posting is live, extra public posts may cost a small fee.
+          <a href="/fund/">Help us get there</a>.
+        </p>
+
+        <p class="short"><a href="/studio/">← All claims</a></p>
+      </div>
+
+      <footer>Early draft · “does it match?” and “is it still live?” are two different answers</footer>
+    </div>
+    <script src="/assets/studio.js" defer></script>
+  </body>
+</html>

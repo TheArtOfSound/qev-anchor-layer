@@ -1,0 +1,21 @@
+name = "qal-web"
+main = "worker.js"
+compatibility_date = "2026-08-05"
+account_id = "eaa59df7f198cbd481763fc7c743b7f4"
+workers_dev = true
+
+[assets]
+directory = "."
+binding = "ASSETS"
+not_found_handling = "404-page"
+html_handling = "auto-trailing-slash"
+
+# Public QAL site — domain separate from Qira
+# Primary: bestmemecoins.app (apex + www)
+[[routes]]
+pattern = "bestmemecoins.app/*"
+zone_name = "bestmemecoins.app"
+
+[[routes]]
+pattern = "www.bestmemecoins.app/*"
+zone_name = "bestmemecoins.app"

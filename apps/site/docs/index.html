@@ -6,25 +6,31 @@
     <title>Details — QAL</title>
     <link rel="stylesheet" href="/assets/site.css" />
   </head>
-  <body>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/">QAL</a>
-        <a href="/">Start here</a>
-        <a href="/verify/">Verify</a>
-        <a href="/memecoins/">Memecoins</a>
-        <a class="active" href="/docs/">Details</a>
-        <a href="/security/">Limits</a>
-        <a href="/fund/">Fund / grants</a>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
       </nav>
+      <nav class="app-sub">
+        <a href="/memecoins/">Why</a>
+        <a class="active" href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap">
 
       <h1>A bit more detail</h1>
       <p class="lede">
-        If the walkthrough on the home page is enough, stay there. This is the
-        nerdy appendix.
+        If the game on the home page was enough, stay there. This page is for
+        people who want the names of the parts.
       </p>
 
-      <h2>Two products</h2>
+      <h2>Two pieces</h2>
       <table class="table-simple">
         <tr>
           <th></th>
@@ -32,20 +38,20 @@
         </tr>
         <tr>
           <td><strong>QEV</strong></td>
-          <td>Encrypt / decrypt locally. Portable vault files.</td>
+          <td>The locker on your computer. Makes a portable locked file.</td>
         </tr>
         <tr>
           <td><strong>QAL</strong></td>
-          <td>Fingerprint vaults, anchor on Solana, verify later.</td>
+          <td>The public stamp for that file, plus history you can check later.</td>
         </tr>
       </table>
 
-      <h2>Digest formula</h2>
+      <h2>How the fingerprint is made</h2>
       <pre>validate schema (BRY-NFET-SX-VAULT-V2)
 canonical = sorted-key JSON, no spaces
 digest    = SHA-256 of that UTF-8 string</pre>
 
-      <h2>CLI sketch</h2>
+      <h2>Commands (for builders)</h2>
       <pre>pnpm install && pnpm build
 pnpm doctor
 qal encrypt file.json --out file.qev    # prompts for phrase
@@ -62,7 +68,7 @@ qal verify file.qev --receipt file.qal-receipt.json</pre>
       </ul>
 
       <div class="actions">
-        <a class="primary" href="/">Full walkthrough</a>
+        <a class="primary" href="/">Play the game</a>
         <a
           class="secondary"
           href="https://github.com/TheArtOfSound/qev-anchor-layer"

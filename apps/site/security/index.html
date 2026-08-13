@@ -6,53 +6,59 @@
     <title>Limits — QAL</title>
     <link rel="stylesheet" href="/assets/site.css" />
   </head>
-  <body>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/">QAL</a>
-        <a href="/">Start here</a>
-        <a href="/verify/">Verify</a>
-        <a href="/memecoins/">Memecoins</a>
-        <a href="/docs/">Details</a>
-        <a class="active" href="/security/">Limits</a>
-        <a href="/fund/">Fund / grants</a>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
       </nav>
+      <nav class="app-sub">
+        <a href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a class="active" href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap">
 
-      <h1>Limits (read this)</h1>
+      <h1>What we don’t promise</h1>
       <p class="lede">Short and blunt.</p>
 
       <div class="warn">
-        Unaudited pre-alpha. Devnet program upload was not finished on public
-        RPC. Do not use for production evidence or compliance claims.
+        Early. Not audited. The public Solana program is not live yet. Do
+        not use this as legal proof.
       </div>
 
-      <h2>Abandoned program ID</h2>
-      <p>An early commit leaked a program keypair. Do not use:</p>
+      <h2>Old address — never use it</h2>
+      <p>An early copy leaked a key. Do not use:</p>
       <pre>AFGfcVVNtucEjJXvL7QSrRLdujr7yWqnC8FdhP7rpixf</pre>
-      <p>Intended ID (keypair not in git):</p>
+      <p>Intended address (key is not in the public repo):</p>
       <pre>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</pre>
 
       <h2>We don’t protect you from</h2>
       <ul class="nope">
-        <li>Stolen computers or wallets</li>
-        <li>Weak passphrases</li>
-        <li>Malicious npm packages</li>
-        <li>A liar who encrypts a lie and anchors it</li>
-        <li>Losing the only phrase (data stays gone)</li>
-        <li>Bugs in Solana, QEV, or this code</li>
+        <li>A stolen computer or wallet</li>
+        <li>A weak phrase</li>
+        <li>Bad software on your machine</li>
+        <li>A liar who locks a lie and stamps the lie</li>
+        <li>Losing the only phrase (the words stay gone)</li>
+        <li>Bugs in Solana, QEV, or this site</li>
       </ul>
 
-      <h2>Funding wallet is receive-only</h2>
+      <h2>The support wallet only receives</h2>
       <p>
-        Grants go to
+        Help goes to
         <code>8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe</code>
-        — not the program upgrade key.
-        <a href="/fund/">Details</a>
+        — not the key that upgrades the program.
+        <a href="/fund/">How to send</a>
       </p>
 
       <footer>
-        See also <code>SECURITY.md</code> and <code>DISCLAIMER.md</code> in the
-        repo.
+        More in <code>SECURITY.md</code> and <code>DISCLAIMER.md</code> on
+        GitHub.
       </footer>
     </div>
   </body>

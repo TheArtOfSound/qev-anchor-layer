@@ -6,123 +6,124 @@
     <title>Memecoins — QAL</title>
     <link rel="stylesheet" href="/assets/site.css" />
   </head>
-  <body>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/">QAL</a>
-        <a href="/">Start here</a>
-        <a href="/verify/">Verify</a>
-        <a class="active" href="/memecoins/">Memecoins</a>
-        <a href="/docs/">Details</a>
-        <a href="/security/">Limits</a>
-        <a href="/fund/">Fund / grants</a>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
       </nav>
+      <nav class="app-sub">
+        <a class="active" href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap">
 
-      <h1>How this can make memecoin culture a bit less dishonest</h1>
+      <h1>Less “trust the website.” That’s it.</h1>
       <p class="lede">
-        Not safer prices. Safer
-        <em>statements</em> — if teams actually use it.
+        This does not make prices safer. It makes
+        <em>statements</em> checkable — if a team actually uses it.
       </p>
 
       <div class="warn">
-        Nothing here makes a coin a good investment. Memecoins can still rug,
-        dump, or die. QAL only helps prove whether a sealed package still
-        matches what was committed on-chain.
+        Nothing here makes a coin a good buy. Coins can still dump or vanish.
+        This only answers: “is this file the same one they locked before?”
       </div>
 
       <h2>What’s broken today</h2>
-      <p>Typical “trust us” theater:</p>
+      <p>People are asked to trust a website or a chat:</p>
       <ul>
-        <li>Roadmap PDF on a site that can be swapped overnight</li>
-        <li>“LP locked” screenshots with no checkable artifact</li>
-        <li>Telegram promises with no durable public commitment</li>
-        <li>“Team doxx vault” that nobody can re-verify independently</li>
-        <li>Silent edits after the pump</li>
+        <li>A roadmap PDF that can be swapped overnight</li>
+        <li>A screenshot that says “liquidity is locked”</li>
+        <li>A Telegram promise with nothing to check later</li>
+        <li>A “team vault” nobody can re-check on their own</li>
+        <li>Quiet edits after the pump</li>
       </ul>
       <p>
-        People are asked to trust a
-        <strong>host</strong>. Hosts change content. Chains don’t rewrite your
-        old transaction.
+        Hosts change pages. A public fingerprint from last week does not.
       </p>
 
-      <h2>What QAL + QEV actually add</h2>
+      <h2>What we add</h2>
       <ol class="steps">
         <li>
-          <strong>Seal the statement privately</strong>
+          <strong>Lock the statement on a computer</strong>
           <p>
-            Team encrypts a disclosure pack with QEV (legal note, wallet list,
-            vesting terms, build hashes, whatever). Public never sees plaintext
-            unless they have the phrase or a deliberate unlock path later.
+            The team locks the real file (letter, wallet list, terms). Other
+            people don’t see the words unless they have the phrase.
           </p>
         </li>
         <li>
-          <strong>Publish the fingerprint on Solana</strong>
+          <strong>Post only a fingerprint</strong>
           <p>
-            Same second (or before launch), they anchor the vault’s digest.
-            Community saves the vault file + receipt. Now there is a public
-            moment in time: “this exact sealed blob was committed.”
+            Same day, they post a tiny code that means “this exact locked
+            file.” The community keeps the file + a proof slip. There is now
+            a public moment: this file, this time.
           </p>
         </li>
         <li>
-          <strong>Anyone can re-check without the team’s server</strong>
+          <strong>Anyone can check later</strong>
           <p>
-            Download vault → hash → compare to chain. If marketing later swaps
-            a PDF on the website, the fingerprint of the
-            <em>old vault</em> still either matches or doesn’t. No dashboard
-            required.
+            Open the file → make the fingerprint again → compare. If the
+            website swaps the PDF, the old file still either matches or it
+            doesn’t. You don’t need their server.
           </p>
         </li>
         <li>
-          <strong>Updates leave a scar, not a cover-up</strong>
+          <strong>Changes leave a scar</strong>
           <p>
-            Need to change the story? Supersede with a new vault and parent
-            link. Want to withdraw an endorsement? Revoke status. History stays
-            readable: “they said A, then moved to B.”
+            Need a new story? Post a new version. The old one stays visible
+            as “replaced.” Want to take it back? Mark it taken back. People
+            can still read: they said A, then they moved to B.
           </p>
         </li>
       </ol>
 
-      <h2>Concrete memecoin use cases</h2>
+      <h2>What teams can lock</h2>
       <table class="table-simple">
         <thead>
           <tr>
             <th>Use</th>
-            <th>Why a digest helps</th>
+            <th>Why a fingerprint helps</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>Pre-launch “we won’t mint more” letter</td>
             <td>
-              Sealed before TGE; later edits need a new vault + supersede trail
+              Locked before launch. Later edits need a new file and a visible “replaced” trail
             </td>
           </tr>
           <tr>
             <td>Team wallet / multisig disclosure pack</td>
             <td>
-              Community can prove the sealed pack is unchanged without doxxing
-              plaintext to the whole internet by default
+              People can prove the pack didn’t change — without posting every
+              name to the whole internet
             </td>
           </tr>
           <tr>
             <td>LP / treasury process document</td>
             <td>
-              Not a chain lock itself — but proves the
-              <em>document</em> they pointed to didn’t morph
+              Does not lock coins on-chain. It does prove the
+              <em>document</em> they pointed to didn’t quietly change
             </td>
           </tr>
           <tr>
             <td>Incident postmortem vault</td>
             <td>
-              After a drama, publish sealed evidence pack + anchor so it can’t
-              be quietly rewritten
+              After a mess, lock the write-up and stamp it so it can’t be
+              quietly rewritten
             </td>
           </tr>
           <tr>
             <td>Partnership / collab claims</td>
             <td>
-              Both sides can countersign / re-anchor their own sealed notes
-              (process design — not magic trust)
+              Both sides can lock their own notes. That’s process — not magic
+              trust
             </td>
           </tr>
         </tbody>
@@ -139,11 +140,11 @@
           </ul>
         </div>
         <div>
-          <h3>Sealed vault + QAL anchor</h3>
+          <h3>Locked file + public fingerprint</h3>
           <ul class="checks">
-            <li>Fingerprint fixed on a public ledger</li>
-            <li>Anyone can re-hash offline</li>
-            <li>Revoke / supersede is visible, not silent</li>
+            <li>Fingerprint fixed in a public record</li>
+            <li>Anyone can check on their own computer</li>
+            <li>Take-back / replace is visible, not silent</li>
           </ul>
         </div>
       </div>
@@ -153,37 +154,38 @@
         <li>Bad tokenomics</li>
         <li>Insider dumps</li>
         <li>Fake social proof</li>
-        <li>A wallet that “anchors” garbage on purpose</li>
-        <li>Lost phrases (encrypted means gone if lost)</li>
+        <li>Someone who locks garbage on purpose</li>
+        <li>A lost phrase (locked means gone if lost)</li>
       </ul>
       <p class="note">
-        Anchoring is not identity. A scammer can encrypt a lie and anchor the
+        A public stamp is not an ID. A scammer can lock a lie and stamp the
         lie. What they can’t do as easily is
-        <em>change which sealed lie</em> after people saved the vault + receipt.
+        <em>swap which locked lie</em> after people saved the file.
       </p>
 
-      <h2>How this fits what we’re building</h2>
+      <h2>How the pieces fit</h2>
       <p>
-        QEV = lockbox on your computer.<br />
-        QAL = public wax seal + registry for that lockbox.<br />
-        Solana = shared place the seal is recorded.<br />
-        You / community = people who actually check.
+        QEV = locker on your computer.<br />
+        QAL = public stamp + history for that locker.<br />
+        Solana = shared place the stamp is written.<br />
+        You = the person who actually checks.
       </p>
       <p>
-        For memecoins, the product pitch is not “safe coin.” It’s
-        <strong>checkable sealed commitments</strong> in a market that
-        currently runs on editable vibes.
+        The point is not “safe coin.” It’s
+        <strong>promises you can check</strong> in a market that runs on
+        editable vibes.
       </p>
 
       <div class="actions">
-        <a class="primary" href="/">Back to walkthrough</a>
-        <a class="secondary" href="/fund/">Funding wallet</a>
-        <a class="secondary" href="/verify/">Verifier</a>
+        <a class="primary" href="/studio/new/">Lock a claim</a>
+        <a class="secondary" href="/">Play the game</a>
+        <a class="secondary" href="/fund/">Help build it</a>
+        <a class="secondary" href="/verify/">Check a file</a>
       </div>
 
       <footer>
-        Experimental · unaudited · no token ·
-        <a href="/security/">limits</a>
+        Early · not audited · no token ·
+        <a href="/security/">what we don’t promise</a>
       </footer>
     </div>
   </body>

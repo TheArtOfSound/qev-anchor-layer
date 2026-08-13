@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create commitment — QAL Studio</title>
+    <meta
+      name="description"
+      content="Seal a claim locally and record its fingerprint. Optional public pack. Chain anchoring gated."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a class="active" href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
+      </nav>
+      <nav class="app-sub">
+        <a href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap wrap-wide">
+
+      <p class="theater-kicker">Make · lock a claim</p>
+      <h1>Lock a claim</h1>
+      <p class="lede">
+        What are you promising? The words stay on this computer unless you
+        choose “anyone can read this.” Later, only a fingerprint is meant
+        to be public.
+      </p>
+
+      <div class="ok" data-parent-banner hidden></div>
+
+      <form data-studio-create class="studio-form">
+        <label for="title">Title</label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          required
+          maxlength="160"
+          placeholder="Pre-launch Treasury Disclosure"
+        />
+
+        <label for="text">Statement / note</label>
+        <textarea
+          id="text"
+          name="text"
+          rows="5"
+          placeholder="We commit not to mint additional tokens after TGE. Treasury wallets listed below."
+        ></textarea>
+
+        <label for="files">Files</label>
+        <input id="files" name="files" type="file" multiple />
+        <p class="play-hint">Letters, PDFs, notes. Big files keep a fingerprint only.</p>
+
+        <label for="json">Structured data (optional)</label>
+        <textarea id="json" name="json" rows="4" class="mono" placeholder='{"wallets":[]}'></textarea>
+
+        <label for="urls">URLs (one per line)</label>
+        <textarea id="urls" name="urls" rows="3" placeholder="https://…"></textarea>
+
+        <label for="wallets">Wallet list (one per line)</label>
+        <textarea
+          id="wallets"
+          name="wallets"
+          rows="3"
+          class="mono"
+          placeholder="Solana addresses…"
+        ></textarea>
+
+        <fieldset class="studio-vis">
+          <legend>Who can read the words?</legend>
+          <label class="vis-opt">
+            <input type="radio" name="visibility" value="encrypted" checked />
+            <span><strong>Keep them locked</strong> — only you and the phrase. Public later: just the fingerprint.</span>
+          </label>
+          <label class="vis-opt">
+            <input type="radio" name="visibility" value="public" />
+            <span><strong>Anyone can read this</strong> — the words are in the file. The fingerprint still proves “this exact file.”</span>
+          </label>
+        </fieldset>
+
+        <div data-phrase-row>
+          <label for="phrase">Secret phrase</label>
+          <input
+            id="phrase"
+            name="phrase"
+            type="password"
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="at least 8 characters"
+          />
+          <p class="play-hint">Lose the phrase, the words are gone. We never see it. Practice lock, not the official one.</p>
+        </div>
+
+        <p class="warn" data-create-error hidden></p>
+
+        <button type="submit" class="btn-primary">Lock it</button>
+        <a class="secondary" href="/studio/">Cancel</a>
+      </form>
+
+      <ol class="studio-pipe" data-create-run hidden>
+        <li data-pipe-step="1">Lock it on this computer</li>
+        <li data-pipe-step="2">Make the locked file</li>
+        <li data-pipe-step="3">Make the fingerprint</li>
+        <li data-pipe-step="4">Wallet sign <em>not live yet</em></li>
+        <li data-pipe-step="5">Post to Solana <em>not live yet</em></li>
+        <li data-pipe-step="6">Save your copy</li>
+        <li data-pipe-step="7">Open it</li>
+      </ol>
+
+      <footer>
+        <a href="/studio/">Make</a> ·
+        <a href="/security/">Limits</a>
+      </footer>
+    </div>
+    <script src="/assets/studio.js" defer></script>
+  </body>
+</html>

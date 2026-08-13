@@ -3,103 +3,116 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fund / grants — QAL</title>
+    <title>Fund QAL — send SOL</title>
+    <meta
+      name="description"
+      content="Support QAL with SOL. Live progress toward the next public milestone. Receive-only wallet."
+    />
     <link rel="stylesheet" href="/assets/site.css" />
   </head>
-  <body>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/">QAL</a>
-        <a href="/">Start here</a>
-        <a href="/verify/">Verify</a>
-        <a href="/memecoins/">Memecoins</a>
-        <a href="/docs/">Details</a>
-        <a href="/security/">Limits</a>
-        <a class="active" href="/fund/">Fund / grants</a>
+  <body class="app">
+    <header class="app-bar">
+      <a class="brand" href="/">QAL</a>
+      <nav class="app-nav">
+        <a href="/">Play</a>
+        <a href="/studio/">Make</a>
+        <a href="/verify/">Check</a>
+        <a href="/devs/">Build</a>
       </nav>
+      <nav class="app-sub">
+        <a href="/memecoins/">Why</a>
+        <a href="/docs/">More</a>
+        <a href="/security/">Limits</a>
+        <a class="nav-fund active" href="/fund/">Fund</a>
+      </nav>
+    </header>
+    <div class="wrap">
 
-      <h1>Funding &amp; grant acceptance</h1>
-      <p class="lede">
-        Public Solana address for supporting QAL / QEV work. Receive only.
+      <h1>Help us finish the public version.</h1>
+      <p class="one-liner">
+        One goal. One wallet that only receives. Progress below.
       </p>
 
-      <div class="wallet">
-        <h3>Bryan’s Solana receive wallet</h3>
-        <div class="addr" id="wallet-addr">
+      <section class="fund-card fund-in" aria-label="Funding progress">
+        <h3>Next step: a public version you can try</h3>
+        <p class="fund-why">
+          A careful release people can run and check themselves — not a
+          hype page. Goal is <strong><span data-fund-goal>25</span> SOL</strong>.
+        </p>
+        <div class="fund-meta">
+          <strong data-fund-status>Loading balance…</strong>
+          <span><span data-fund-pct>0</span>%</span>
+        </div>
+        <div
+          class="fund-track"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Funding progress"
+        >
+          <div class="fund-fill" data-fund-fill></div>
+        </div>
+        <div class="fund-addr" id="wallet-addr">
           8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe
         </div>
-        <button type="button" class="btn-copy" id="copy-wallet">
-          Copy address
-        </button>
-        <p style="margin-top: 0.85rem">
-          <strong>OK for:</strong> Solana grants, sponsorships, bounties,
-          donations, approved payments related to this work.
-        </p>
-        <p>
-          <strong>Not for:</strong> program upgrade authority, mint authority,
-          freeze authority, automated fee payer, “treasury controller,” or
-          anything that requires giving us a seed phrase (never do that).
-        </p>
-      </div>
+        <div class="fund-actions">
+          <button type="button" class="btn-fund" data-copy="#wallet-addr">
+            Copy wallet
+          </button>
+          <a
+            class="btn-primary"
+            href="https://explorer.solana.com/address/8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe"
+            target="_blank"
+            rel="noopener"
+            >Open in explorer</a
+          >
+          <span class="hint">Solana · receive only</span>
+        </div>
+      </section>
 
-      <div class="warn">
-        Sending funds is voluntary support of open-source / experimental
-        software. No equity, no token claim, no promise of delivery beyond
-        public repo progress.
-      </div>
-
-      <h2>What you’re funding</h2>
-      <ul class="checks">
-        <li>QEV local encryption tooling (already shipping)</li>
-        <li>QAL anchor + verify protocol (pre-alpha)</li>
-        <li>Honest public evidence and docs — not hype dashboards</li>
-        <li>Path toward audited, carefully deployed infrastructure</li>
-      </ul>
-
-      <h2>Explorer</h2>
-      <p>
-        <a
-          href="https://explorer.solana.com/address/8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe"
-          target="_blank"
-          rel="noopener"
-          >View address on Solana Explorer</a
-        >
-        (mainnet by default in explorer UI — switch network there if needed).
+      <h2>Later: paying to post, never to check</h2>
+      <p class="short">
+        Checking a public claim stays free. Posting a new public claim may
+        cost a little once the real network is live. Today this wallet is
+        <strong>optional support</strong> — not a purchase.
+      </p>
+      <p class="note">
+        Any future payment goes to this receive-only address — never the
+        key that upgrades the program.
       </p>
 
+      <h2>What your support pays for</h2>
+      <ul class="checks">
+        <li>A public test people can actually check</li>
+        <li>The real locker, not just this practice page</li>
+        <li>Clear writing and honest evidence</li>
+        <li>A careful review before calling it done</li>
+      </ul>
+
+      <h2>Simple rules</h2>
+      <ul class="nope">
+        <li>No token. No share of the company.</li>
+        <li>Not a contract — you can send or not</li>
+        <li>Never send a seed phrase. Ever.</li>
+        <li>This wallet cannot upgrade the program</li>
+      </ul>
+
+      <div class="note">
+        The bar reads the live balance. If the network is busy it may lag —
+        the address is still good.
+      </div>
+
       <div class="actions">
-        <a class="primary" href="/">What we’re building</a>
-        <a class="secondary" href="/memecoins/">Memecoin write-up</a>
+        <a class="primary" href="/studio/">Lock a claim</a>
+        <a class="secondary" href="/">Play the game</a>
+        <a class="secondary" href="/memecoins/">Why this matters</a>
       </div>
 
       <footer>
-        <a href="/">Home</a>
+        <a href="/">Home</a> ·
+        <a href="/security/">Limits</a>
       </footer>
     </div>
-    <script>
-      (function () {
-        var btn = document.getElementById("copy-wallet");
-        var addr = document.getElementById("wallet-addr");
-        if (!btn || !addr) return;
-        btn.addEventListener("click", function () {
-          var text = addr.textContent.trim();
-          function done() {
-            btn.textContent = "Copied";
-            btn.classList.add("done");
-            setTimeout(function () {
-              btn.textContent = "Copy address";
-              btn.classList.remove("done");
-            }, 1600);
-          }
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done).catch(function () {
-              window.prompt("Copy:", text);
-            });
-          } else {
-            window.prompt("Copy:", text);
-          }
-        });
-      })();
-    </script>
+    <script src="/assets/site.js" defer></script>
   </body>
 </html>
