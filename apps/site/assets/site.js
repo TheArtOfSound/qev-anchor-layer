@@ -34,13 +34,20 @@
     });
   }
 
-  document.querySelectorAll("[data-copy]").forEach(function (btn) {
-    var sel = btn.getAttribute("data-copy");
-    var el = sel ? document.querySelector(sel) : null;
-    wireCopy(btn, function () {
-      return el ? el.textContent.trim() : FUND_WALLET;
+  /* data-copy-value carries the full string when the page shows a
+     shortened one (program ids, digests). data-copy points at an element
+     and copies its text. */
+  document
+    .querySelectorAll("[data-copy], [data-copy-value]")
+    .forEach(function (btn) {
+      var full = btn.getAttribute("data-copy-value");
+      var sel = btn.getAttribute("data-copy");
+      var el = sel ? document.querySelector(sel) : null;
+      wireCopy(btn, function () {
+        if (full) return full;
+        return el ? el.textContent.trim() : FUND_WALLET;
+      });
     });
-  });
 
   /* legacy ids */
   wireCopy(document.getElementById("copy-wallet"), function () {
