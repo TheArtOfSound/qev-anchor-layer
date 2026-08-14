@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;650;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/site.css?v=20260813d" />
+    <link rel="stylesheet" href="/assets/site.css?v=20260814a" />
   </head>
   <body class="app">
     <header class="app-bar">
@@ -65,7 +65,19 @@
       <h2>Official program</h2>
       <p class="short">
         Official QAL program:
-        <code>6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</code>
+        <code id="prog-id">6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR</code>
+        <button type="button" class="btn-copy mini" data-copy="#prog-id">
+          Copy id
+        </button>
+        <a
+          class="secondary"
+          href="https://explorer.solana.com/address/6cN9gD8LBqkEUhvT4LibnbBgXdCHeC5AgqvcFQQTNvnR?cluster=devnet"
+          >Explorer</a
+        >
+      </p>
+      <p class="short">
+        Network: <code>solana-devnet</code> · genesis
+        <code>EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG</code>
       </p>
       <p class="short">
         Abandoned, compromised id — not official:
@@ -75,26 +87,58 @@
         QEV is the locker on your computer. QAL is the public stamp.
       </p>
 
-      <h2>The idea in code</h2>
-<pre>const commitment = await qal.commit({
-  vault,
-  title: "Treasury Disclosure"
-})
-
-await qal.verify(commitment)
-await qal.supersede(oldCommitment, newVault)
-await qal.revoke(commitment)
-await qal.history(commitment)</pre>
-
+      <h2>Works today: the command line</h2>
       <p class="short">
-        Same verbs in the command line:
+        This is the shipped path. Copy it and run it against Devnet.
       </p>
-<pre>qal encrypt INPUT --out vault.qev
+      <div class="code-wrap">
+        <button type="button" class="btn-copy mini" data-copy="#cli-snippet">
+          Copy
+        </button>
+<pre id="cli-snippet">qal doctor
+qal encrypt INPUT --out vault.qev
 qal anchor vault.qev --network devnet
 qal verify vault.qev --receipt vault.qal-receipt.json
 qal history VAULT_DIGEST --issuer PUBKEY
 qal revoke ANCHOR_ADDRESS
 qal supersede OLD_VAULT NEW_VAULT</pre>
+      </div>
+
+      <h2>Works today: the SDK</h2>
+      <p class="short">
+        These are the real exports of <code>@qira/qal-sdk</code>. The vault is
+        a QEV envelope; the signer is your own keypair — we never hold it.
+      </p>
+      <div class="code-wrap">
+        <button type="button" class="btn-copy mini" data-copy="#sdk-snippet">
+          Copy
+        </button>
+<pre id="sdk-snippet">import {
+  computeVaultDigest,
+  anchorVault,
+  verifyVaultWithReceipt,
+  supersedeVault,
+  revokeAnchor,
+  walkRevisionHistory,
+} from "@qira/qal-sdk";
+
+const { digest } = computeVaultDigest(vault);
+const { receipt, signature } = await anchorVault(
+  { vault, network: "solana-devnet" },
+  signer,
+);
+
+const result = await verifyVaultWithReceipt(vault, receipt, {
+  connection,
+  verifyTransaction: true,
+});
+// result.outcome === "VALID_ACTIVE"</pre>
+      </div>
+
+      <p class="short hint">
+        A shorter <code>qal.commit()</code>-style wrapper is a proposal, not
+        shipped. If you see it in a write-up, it is not in this package yet.
+      </p>
 
       <h2>What the public record holds</h2>
       <ul class="checks">
@@ -148,6 +192,6 @@ qal supersede OLD_VAULT NEW_VAULT</pre>
         </div>
       </footer>
     </div>
-      <script src="/assets/site.js?v=20260813c" defer></script>
+      <script src="/assets/site.js?v=20260814a" defer></script>
   </body>
 </html>

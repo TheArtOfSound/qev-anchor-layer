@@ -1537,6 +1537,35 @@ ul.nope li::before {
 
 .btn-copy:hover { background: #333; }
 
+/* inline copy chip next to a shortened id / digest */
+.btn-copy.mini {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.14rem 0.5rem;
+  margin-left: 0.4rem;
+  border-radius: 999px;
+  vertical-align: middle;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(128, 128, 128, 0.45);
+}
+
+.btn-copy.mini:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* copy chip pinned to a code block */
+.code-wrap { position: relative; }
+
+.code-wrap .btn-copy.mini {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  margin-left: 0;
+  background: var(--paper);
+}
+
 .btn-copy.done,
 button.btn-fund.done,
 button.btn-primary.done {

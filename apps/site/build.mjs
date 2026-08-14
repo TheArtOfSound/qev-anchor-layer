@@ -13,13 +13,42 @@ const verifyDir = path.join(root, "verify");
 
 await fs.mkdir(vendorDir, { recursive: true });
 
-// Copy verifier logic from sibling app if present, else keep local
+// Copy verifier logic from the sibling app, but never clobber a site copy
+// that has diverged. The site verifier carries site-only behaviour (hosted
+// demo vault + receipt, Studio-envelope messaging); an unconditional copy
+// silently deleted it, and `pnpm build` runs inside deploy-devnet.sh.
+// Set QAL_SYNC_VERIFIER=1 to force the overwrite on purpose.
 const siblingVerifier = path.join(root, "..", "verifier", "verifier.js");
-try {
-  await fs.copyFile(siblingVerifier, path.join(verifyDir, "verifier.js"));
-  console.log("Copied verifier.js from apps/verifier");
-} catch {
-  console.log("Using apps/site/verify/verifier.js as-is");
+const siteVerifier = path.join(verifyDir, "verifier.js");
+const force = process.env.QAL_SYNC_VERIFIER === "1";
+
+async function readOrNull(p) {
+  try {
+    return await fs.readFile(p, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+const [siblingSrc, siteSrc] = await Promise.all([
+  readOrNull(siblingVerifier),
+  readOrNull(siteVerifier),
+]);
+
+if (siblingSrc === null) {
+  console.log("No apps/verifier/verifier.js — using site copy as-is");
+} else if (siteSrc === null || siblingSrc === siteSrc || force) {
+  await fs.writeFile(siteVerifier, siblingSrc);
+  console.log(
+    force
+      ? "Forced verifier.js copy from apps/verifier (QAL_SYNC_VERIFIER=1)"
+      : "Copied verifier.js from apps/verifier",
+  );
+} else {
+  console.log(
+    "WARNING: apps/site/verify/verifier.js has diverged from apps/verifier/verifier.js — keeping the site copy.\n" +
+      "         Reconcile them, or run with QAL_SYNC_VERIFIER=1 to overwrite the site copy.",
+  );
 }
 
 const pkgDir = path.dirname(require.resolve("@solana/web3.js/package.json"));

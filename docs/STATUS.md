@@ -66,12 +66,16 @@ supersede_vault:
 | Evidence pack | `evidence/devnet/v0.1.2/` |
 | Hosted Check vault | `apps/site/evidence/devnet/vault.json` (later demo file, not File A) |
 | Grant wallet as authority | **Never** |
+| Deploy slot | `483578680` |
+| Upgrade authority | `3ZYTW6D7J5NRZTekzvb51GP2RfUawkviJgXuxy3rcWnz` (single key — multisig before mainnet) |
+| Binary SHA-256 | `c49a71e0016c2ab4de22833ee599bf3076d3f3dc0d1dd13fa153f14ee18e0259` |
+| Deployed bytes == local build | Verified via `solana program dump` (hashes equal). Reproducible build ≠ audit. |
 
 ## Still incomplete
 
 | Item | Notes |
 |------|-------|
-| Green GitHub Actions on `main` | Confirm after this push |
+| Green GitHub Actions on `main` | Green on `5376e6f` (2026-08-13). Re-confirm each push. |
 | External audit | No |
 | Token | **None** |
 | Studio posting | Gated. Browser envelopes are not official QEV. |
