@@ -1,11 +1,11 @@
-# QAL — The Receipt Issue / art direction v2
+# QAL — The Receipt Issue / art direction v2b
 
 ## Production (2026-10-08)
 - Site: https://bestmemecoins.app/ and https://www.bestmemecoins.app/
 - Production router: `qal-editorial-router`
-- Active deployed Worker version: `d3d0961478034aaaa17dcb27c67d131e`
+- Active deployed Worker version: `0b5f650f5fc9440580f76820087fa323`
 - Source of truth: `apps/site/editorial-router.js`, contains **complete HTML/CSS/JS and fetch handler**.
-- Git commit with latest source: `6b461a64ea1dd054a47235878165859277c6b5d9`.
+- Git commit with latest source: `4fb56394a5b78439a8df771ee8c8c11d0cee4530`.
 - Runtime data source: Cloudflare service binding `QAL_ORIGIN` → Worker `qal-web`.
 - Existing apex and www Worker routes both point to `qal-editorial-router`; neither DNS nor payment destinations were changed.
 
@@ -14,15 +14,16 @@ Only `GET /` and `GET /fund/` (also `/fund`) are HTML-transformed.
 The router directly serves `/_qal/design-v2.css` and `/_qal/design-v2.js` from constants in its source.
 It forwards every other path and all other HTTP methods unchanged to the original `qal-web` Worker.
 
+- The v2b finishing pass also brings the original interactive game stage, process marks and controls into the same art direction without changing game logic.
 - Homepage: high-contrast editorial hero, clearly illustrative original/edited file demonstration, interactive change highlighting, 2-minute demo CTA, real Devnet proof CTA, branded ticker, graphic demo introduction, improved cards, independent support CTA, existing funding component.
 - Funding: distinct dark hero, real milestones, CTA scroll to original wallet and live balance, all original donation notices and wallet.
 - Known boundary: this version does not replace the visual design of every internal QAL page. Existing evidence, verifier, and Studio routes remain served by the original Worker.
 
 ### Preview & production evidence
-- Preview Worker: `qal-art-v2-preview` / version `82e27831c4434af4b56be263bb139d30` (same source).
+- Preview Worker: `qal-art-v2-preview` / version `07bc890992034716aeb631bbcfa58962` (same source).
 - Browser snapshots checked the homepage at desktop and mobile widths, and donation page on desktop.
 - JavaScript-enabled checks (390px and 1366px) confirmed CSS applies, the comparison button sets `aria-pressed=true` and `.is-revealed`, and no horizontal document overflow was detected at these widths.
-- Production browser content checks succeeded for apex, www, `/fund/`, `/verify/`, `/studio/`, `/evidence/devnet/`, and both design assets.
+- Production browser content checks succeeded for apex, www, `/fund/`, `/verify/`, `/studio/`, `/evidence/devnet/`, and both design assets. The final v2b production check also confirmed numbered learning-pipeline marks on apex and www.
 - The funding wallet remains `8976JDnWQqq7uFfwJza82gZSkGj4PMGMY4JLh8b7TDGe`; no destination changed.
 - End-to-end Solana transactions, donations, third-party wallet compatibility and all gameplay branches were **not** executed as part of this graphic-design release.
 
