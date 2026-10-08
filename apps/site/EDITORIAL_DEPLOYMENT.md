@@ -1,11 +1,11 @@
-# QAL — The Receipt Issue / art direction v2b
+# QAL — The Receipt Issue / art direction sim2
 
 ## Production (2026-10-08)
 - Site: https://bestmemecoins.app/ and https://www.bestmemecoins.app/
 - Production router: `qal-editorial-router`
-- Active deployed Worker version: `0b5f650f5fc9440580f76820087fa323`
+- Active deployed Worker version: `1865a091e78e411e9374a4751a7d23ad`
 - Source of truth: `apps/site/editorial-router.js`, contains **complete HTML/CSS/JS and fetch handler**.
-- Git commit with latest source: `4fb56394a5b78439a8df771ee8c8c11d0cee4530`.
+- Git commit with latest source: `8792c55986f99c3078f08b01196eedc7276b0b51`.
 - Runtime data source: Cloudflare service binding `QAL_ORIGIN` → Worker `qal-web`.
 - Existing apex and www Worker routes both point to `qal-editorial-router`; neither DNS nor payment destinations were changed.
 
@@ -37,3 +37,12 @@ Fetch `apps/site/editorial-router.js` from GitHub. Upload as `worker.mjs` with C
 {"main_module":"worker.mjs","compatibility_date":"2026-08-05","bindings":[{"name":"QAL_ORIGIN","type":"service","service":"qal-web"}]}
 ```
 Then verify apex + www homepage, fund page, CSS and JS endpoints, and the unchanged verifier, proof and Studio routes. Do not replace QAL Origin Static Assets, modify the Solana wallet address, or suppress the security and non-audited notices to simplify marketing.
+
+## Beginner-first guided simulation (2026-10-08 sim2)
+- Replaces the default homepage six-level game experience with a single fictional policy document and three stages: save original text, choose original versus altered text, compare SHA-256.
+- The browser's native Web Crypto SHA-256 hashes canonical demo strings, without remote upload, wallet interaction, blockchain transaction or permanent persistence. The result proves equality/inequality of the example bytes only; it does **not** certify a true statement, malicious intent or an on-chain entry.
+- The altered case uses a 24-hour withdrawal window changed to 72 hours; the unchanged case keeps 24 hours.
+- The original six-level game and Three.js scene remain intact inside `#qa-advanced` and load their original game and scene scripts only when clicked. The existing QAL Origin scripts, proofs, assets, funding code and wallet are unchanged.
+- The homepage primary CTA now targets `#try-it` rather than the hidden advanced game. Beginner-first simulation CSS/JS are served by the editorial router as `/_qal/design-v2.css` and `/_qal/design-v2.js`, version `20261008-sim2`.
+- Production browser test: apex 390px and www 1366px SHA-256 altered-case interaction produced `MISMATCH. YOU CAUGHT THE CHANGE.`, mobile terms `72 HOURS`, and no horizontal overflow. Preview browser test confirmed unchanged-case `MATCH. THE TEXT DID NOT CHANGE.` and that advanced original game opens and initializes. Apex, www, fund, verifier, proof, Studio and new CSS/JS all returned 200 in production.
+- Prior production router version before the sim2 change: `0b5f650f5fc9440580f76820087fa323`. Follow standard route or Worker version rollback in the section above. Preserve the working `QAL_ORIGIN` service binding during redeploy.
