@@ -87,7 +87,9 @@ export default {
   const path=new URL(request.url).pathname;
   if(request.method==="GET"&&path==="/_qal/design-v2.css")
    return new Response(QA_CSS,{headers:{"content-type":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
-  if(request.method==="GET"&&path==="/_qal/interior.css")\n   return new Response(QA_INTERIOR_CSS,{headers:{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"}});\n  if(request.method==="GET"&&path==="/_qal/design-v2.js")
+  if(request.method==="GET"&&path==="/_qal/interior.css")
+   return new Response(QA_INTERIOR_CSS,{headers:{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"}});
+  if(request.method==="GET"&&path==="/_qal/design-v2.js")
    return new Response(QA_JS,{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
   const upstream=await env.QAL_ORIGIN.fetch(request);
   const interiorKey=path!=="/"&&path!=="/fund"&&path!=="/fund/"?path.endsWith("/")?path:path+"/":null;
