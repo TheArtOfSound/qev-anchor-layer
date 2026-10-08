@@ -46,3 +46,9 @@ Then verify apex + www homepage, fund page, CSS and JS endpoints, and the unchan
 - The homepage primary CTA now targets `#try-it` rather than the hidden advanced game. Beginner-first simulation CSS/JS are served by the editorial router as `/_qal/design-v2.css` and `/_qal/design-v2.js`, version `20261008-sim2`.
 - Production browser test: apex 390px and www 1366px SHA-256 altered-case interaction produced `MISMATCH. YOU CAUGHT THE CHANGE.`, mobile terms `72 HOURS`, and no horizontal overflow. Preview browser test confirmed unchanged-case `MATCH. THE TEXT DID NOT CHANGE.` and that advanced original game opens and initializes. Apex, www, fund, verifier, proof, Studio and new CSS/JS all returned 200 in production.
 - Prior production router version before the sim2 change: `0b5f650f5fc9440580f76820087fa323`. Follow standard route or Worker version rollback in the section above. Preserve the working `QAL_ORIGIN` service binding during redeploy.
+
+## Full interior design rollout — 2026-10-08
+
+The entire public HTML site now uses one coherent art direction across the 10 interior paths listed in [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md). It is implemented by the same existing production Worker router `qal-editorial-router` through the new `/_qal/interior.css?v=20261008-all3` and per-page HTML composition. The homepage (`/`) and funding page (`/fund/`) retain their existing design and behavior. Source and tested routing live in `apps/site/editorial-router.js`.
+
+Production Worker version: `bab0a9b3db0f4eef87ede21c757e6e07` (previous: `1865a091e78e411e9374a4751a7d23ad`). The original origin `qal-web` is untouched, with the same `QAL_ORIGIN` service binding. The live production 12-route and stylesheet smoke test passed. The 390px mobile screenshots show forms and verifier action areas without decorative-hero obstruction; verifier CSP was preserved.
