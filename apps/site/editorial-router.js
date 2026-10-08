@@ -22,9 +22,9 @@ function qaInterior(html,path){const cfg=QA_INTERIOR_META[path];if(!cfg)return n
  const hero='<section class="qa-interior-hero" aria-label="'+qaEsc(cfg.status)+'"><div class="qa-interior-hero-inner">'+innerIntro+art+'</div></section>';
  let result=html;
  if(intro)result=result.replace(intro[0],hero);else result=result.replace('<div data-studio-dash>',hero+'<div data-studio-dash>');
- result=result.replace(wrap[0],wrap[0]+'<div class="qa-content-root" id="qa-content"></div>');
+ // Keep all existing form and verifier DOM nodes in their original relative positions.
  const nav=qaNavigation(path,cfg.section);
- result=result.replace(hero,hero+nav);
+ result=result.replace(hero,hero+nav+'<span id="qa-content" class="qa-content-anchor" aria-hidden="true"></span>');
  const end='<section class="qa-interior-end"><div><strong>Keep independent verification accessible.</strong><p>Your support helps fund security review, development, and a verifier that remains free. Optional support, not an investment.</p></div><a href="/fund/">Support development ↗</a></section>';
  const foot=result.lastIndexOf('<footer class="site-foot">');if(foot<0)return null;
  result=result.slice(0,foot)+end+'\n'+result.slice(foot);
